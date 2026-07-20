@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Meu Mercado{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" href="/">🛒 Meu Mercado</a>
+        {% block nav %}{% endblock %}
+    </header>
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+    <footer class="footer">
+        <small>Meu Mercado · integração com a API do Mercado Livre</small>
+    </footer>
+</body>
+</html>

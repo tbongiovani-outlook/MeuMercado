@@ -216,3 +216,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- Meu Mercado (projeto) ---
+*.db
+*.sqlite3
+.DS_Store
+Thumbs.db

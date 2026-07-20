@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Painel · Meu Mercado{% endblock %}
+
+{% block nav %}
+<nav class="nav">
+    {% if user %}<span class="nav__user">{{ user.nickname }}</span>{% endif %}
+    <a class="btn btn--ghost" href="/logout">Sair</a>
+</nav>
+{% endblock %}
+
+{% block content %}
+{% if error %}
+<div class="alert alert--error">{{ error }}</div>
+{% endif %}
+
+{% if user %}
+<section class="card">
+    <h2>Conta</h2>
+    <p><strong>{{ user.nickname }}</strong> · ID {{ user.id }}</p>
+    {% if user.seller_reputation and user.seller_reputation.level_id %}
+    <p class="muted">Reputação: {{ user.seller_reputation.level_id }}</p>
+    {% endif %}
+</section>
+{% endif %}
+
+<div class="grid">
+    <section class="card">
+        <h2>Anúncios <span class="badge">{{ items|length }}</span></h2>
+        {% if items %}
+        <ul class="list">
+            {% for item_id in items %}
+            <li><code>{{ item_id }}</code></li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted">Nenhum anúncio encontrado.</p>
+        {% endif %}
+    </section>
+
+    <section class="card">
+        <h2>Vendas recentes <span class="badge">{{ orders|length }}</span></h2>
+        {% if orders %}
+        <table class="table">
+            <thead>
+                <tr><th>Pedido</th><th>Status</th><th>Total</th></tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td><code>{{ order.id }}</code></td>
+                    <td>{{ order.status }}</td>
+                    <td>{{ order.currency_id }} {{ order.total_amount }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="muted">Nenhuma venda encontrada.</p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

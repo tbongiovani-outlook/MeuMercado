@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Entrar · Meu Mercado{% endblock %}
+
+{% block content %}
+<section class="card card--center">
+    <h1>Bem-vindo ao Meu Mercado</h1>
+    <p class="muted">
+        Conecte sua conta do Mercado Livre para acompanhar anúncios, vendas,
+        entregas, mensagens e reclamações em um só lugar.
+    </p>
+
+    {% if error %}
+    <div class="alert alert--error">{{ error }}</div>
+    {% endif %}
+
+    {% if configured %}
+    <a class="btn btn--primary" href="/login">Conectar com o Mercado Livre</a>
+    {% else %}
+    <div class="alert alert--warn">
+        <strong>Configuração pendente.</strong>
+        Preencha <code>MELI_CLIENT_ID</code> e <code>MELI_CLIENT_SECRET</code> no
+        arquivo <code>.env</code> (veja o <code>.env.example</code>) e reinicie a aplicação.
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
