@@ -68,7 +68,7 @@
                     {% if t.status == 'pendente' %}
                     <form method="post" action="/agendamentos/{{ t.id }}/cancelar"
                           onsubmit="return confirm('Cancelar este agendamento?');">
-                        <button class="btn btn--ghost btn--sm" type="submit">Cancelar</button>
+                        <button class="btn btn--ghost btn--sm btn--icon has-tip" data-tip="Cancelar" type="submit" aria-label="Cancelar agendamento"><span class="ico" aria-hidden="true">✖️</span></button>
                     </form>
                     {% endif %}
                 </td>

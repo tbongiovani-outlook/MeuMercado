@@ -2,13 +2,19 @@
 {% block title %}Concorrência · Meu Mercado{% endblock %}
 {% block nav %}{% include "_nav.html" %}{% endblock %}
 
-{% block content %}
-<div class="row">
-    <h1>Concorrência e preço</h1>
-    <a class="btn btn--ghost" href="/anuncios">Voltar</a>
-</div>
-<p class="muted">{{ item.title }} · <code>{{ item.id }}</code> · seu preço: <strong>R$ {{ '%.2f'|format(preco) }}</strong></p>
+{% block hero %}
+<header class="page-header">
+    <div>
+        <h1 class="page-header__title">Concorrência e preço</h1>
+        {% if item %}<p class="page-header__sub">{{ item.title }} · seu preço: R$ {{ '%.2f'|format(preco) }}</p>{% endif %}
+    </div>
+    <div class="page-header__actions">
+        <a class="btn btn--ghost" href="/anuncios">← Voltar</a>
+    </div>
+</header>
+{% endblock %}
 
+{% block content %}
 {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
 
 {% if recomendacao %}

@@ -2,16 +2,19 @@
 {% block title %}Ofertas do anúncio · Meu Mercado{% endblock %}
 {% block nav %}{% include "_nav.html" %}{% endblock %}
 
-{% block content %}
-<div class="row">
-    <h1>Ofertas de promoção</h1>
-    <a class="btn btn--ghost" href="/promocoes">Voltar</a>
-</div>
-{% if item %}
-<p class="muted">{{ item.title }} · <code>{{ item.id }}</code> · preço atual:
-    <strong>R$ {{ '%.2f'|format(item.price or 0) }}</strong></p>
-{% endif %}
+{% block hero %}
+<header class="page-header">
+    <div>
+        <h1 class="page-header__title">Ofertas de promoção</h1>
+        {% if item %}<p class="page-header__sub">{{ item.title }} · preço atual: R$ {{ '%.2f'|format(item.price or 0) }}</p>{% endif %}
+    </div>
+    <div class="page-header__actions">
+        <a class="btn btn--ghost" href="/promocoes">← Voltar</a>
+    </div>
+</header>
+{% endblock %}
 
+{% block content %}
 {% if flash %}<div class="alert alert--ok" role="status">{{ flash }}</div>{% endif %}
 {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
 

@@ -43,7 +43,7 @@
                         <span class="muted">—</span>
                     {% endif %}
                 </td>
-                <td><a class="btn btn--ghost btn--sm" href="/vendas/{{ order.id }}/mensagens">Mensagens</a></td>
+                <td><a class="btn btn--ghost btn--sm btn--icon has-tip" data-tip="Mensagens" href="/vendas/{{ order.id }}/mensagens" aria-label="Mensagens do pedido {{ order.id }}"><span class="ico" aria-hidden="true">💬</span></a></td>
             </tr>
             {% endfor %}
         </tbody>

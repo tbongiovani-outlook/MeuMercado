@@ -2,12 +2,19 @@
 {% block title %}Editar anúncio · Meu Mercado{% endblock %}
 {% block nav %}{% include "_nav.html" %}{% endblock %}
 
-{% block content %}
-<div class="row">
-    <h1>Editar anúncio</h1>
-    <a class="btn btn--ghost" href="/anuncios">Voltar</a>
-</div>
+{% block hero %}
+<header class="page-header">
+    <div>
+        <h1 class="page-header__title">Editar anúncio</h1>
+        {% if item %}<p class="page-header__sub">{{ item.title }}</p>{% endif %}
+    </div>
+    <div class="page-header__actions">
+        <a class="btn btn--ghost" href="/anuncios">← Voltar</a>
+    </div>
+</header>
+{% endblock %}
 
+{% block content %}
 {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
 
 <section class="card">

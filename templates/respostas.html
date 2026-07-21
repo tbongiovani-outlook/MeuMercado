@@ -44,7 +44,7 @@
                 </div>
                 <form method="post" action="/respostas/{{ r.id }}/excluir"
                       onsubmit="return confirm('Excluir esta resposta?');">
-                    <button class="btn btn--ghost btn--sm" type="submit">Excluir</button>
+                    <button class="btn btn--ghost btn--sm btn--icon has-tip" data-tip="Excluir" type="submit" aria-label="Excluir resposta {{ r.titulo }}"><span class="ico" aria-hidden="true">🗑️</span></button>
                 </form>
             </div>
         </li>
