@@ -322,6 +322,7 @@ curl -X POST \
 - [x] Melhorias de usabilidade (agrupamento de campos, dicas, feedback, responsividade)
 - [x] Análise de concorrência de preço (catálogo) + taxa de conversão por anúncio
 - [x] Acessibilidade WCAG 2.2 AA e Fluent Design (foco, skip link, alt, aria, contraste, elevação)
+- [x] KPIs no painel principal (vendas, faturamento, ticket, perguntas, reclamações, estoque) + ações
 
 ---
 
