@@ -19,8 +19,8 @@ jobs:
     name: Lint (Ruff)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: pip
@@ -44,10 +44,10 @@ jobs:
             python-version: "3.12"
     steps:
       - name: Checkout do código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Configurar Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -62,7 +62,7 @@ jobs:
 
       - name: Publicar relatório de cobertura
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: coverage-${{ matrix.os }}-py${{ matrix.python-version }}
           path: coverage.xml
@@ -73,12 +73,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout do código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Configurar Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: pip
@@ -89,7 +89,7 @@ jobs:
           pip-audit -r requirements.txt --strict
 
       - name: gitleaks (varredura de segredos)
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
