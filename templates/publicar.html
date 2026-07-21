@@ -9,7 +9,7 @@
 
 {% if resultado %}
     {% if resultado.ok %}
-    <div class="alert alert--ok">
+    <div class="alert alert--ok" role="status">
         Anúncio publicado com sucesso!
         <strong>{{ resultado.item.id }}</strong>
         {% if resultado.item.permalink %}
@@ -22,7 +22,7 @@
         {% endif %}
     </div>
     {% else %}
-    <div class="alert alert--error">
+    <div class="alert alert--error" role="alert">
         Não foi possível publicar: {{ resultado.erro }}
         {% if resultado.category_id %}<br><small>Categoria prevista: <code>{{ resultado.category_id }}</code></small>{% endif %}
     </div>

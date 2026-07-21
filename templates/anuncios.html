@@ -8,8 +8,8 @@
     <a class="btn btn--primary" href="/publicar">Publicar novo</a>
 </div>
 
-{% if flash %}<div class="alert alert--ok">{{ flash }}</div>{% endif %}
-{% if error %}<div class="alert alert--error">{{ error }}</div>{% endif %}
+{% if flash %}<div class="alert alert--ok" role="status">{{ flash }}</div>{% endif %}
+{% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
 
 <section class="card">
     {% if items %}
@@ -23,7 +23,7 @@
         <tbody>
             {% for it in items %}
             <tr>
-                <td>{% if it.thumbnail %}<img src="{{ it.thumbnail }}" alt="" width="40" height="40">{% endif %}</td>
+                <td>{% if it.thumbnail %}<img src="{{ it.thumbnail }}" alt="Foto de {{ it.title }}" width="40" height="40">{% endif %}</td>
                 <td>{{ it.title }}</td>
                 <td>{{ it.price }}</td>
                 <td>{{ it.available_quantity }}</td>
@@ -31,11 +31,11 @@
                 <td><span class="badge">{{ it.status }}</span></td>
                 <td>
                     <div class="actions">
-                        {% if it.permalink %}<a class="btn btn--ghost btn--sm" href="{{ it.permalink }}" target="_blank" rel="noopener">Ver</a>{% endif %}
-                        <a class="btn btn--ghost btn--sm" href="/anuncios/{{ it.id }}/qualidade">Qualidade</a>
-                        <a class="btn btn--ghost btn--sm" href="/anuncios/{{ it.id }}/concorrencia">Concorrência</a>
+                        {% if it.permalink %}<a class="btn btn--ghost btn--sm" href="{{ it.permalink }}" target="_blank" rel="noopener" aria-label="Ver {{ it.title }} no Mercado Livre (abre em nova aba)">Ver</a>{% endif %}
+                        <a class="btn btn--ghost btn--sm" href="/anuncios/{{ it.id }}/qualidade" aria-label="Qualidade de {{ it.title }}">Qualidade</a>
+                        <a class="btn btn--ghost btn--sm" href="/anuncios/{{ it.id }}/concorrencia" aria-label="Concorrência de {{ it.title }}">Concorrência</a>
                         {% if it.status != 'closed' %}
-                        <a class="btn btn--ghost btn--sm" href="/anuncios/{{ it.id }}/editar">Editar</a>
+                        <a class="btn btn--ghost btn--sm" href="/anuncios/{{ it.id }}/editar" aria-label="Editar {{ it.title }}">Editar</a>
                         {% endif %}
                         {% if it.status == 'active' %}
                         <form method="post" action="/anuncios/{{ it.id }}/status">

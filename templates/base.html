@@ -7,11 +7,12 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+    <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
     <header class="topbar">
         <a class="brand" href="/">🛒 Meu Mercado</a>
         {% block nav %}{% endblock %}
     </header>
-    <main class="container">
+    <main class="container" id="conteudo" tabindex="-1">
         {% block content %}{% endblock %}
     </main>
     <footer class="footer">

@@ -6,8 +6,8 @@
 <h1>Central pós-venda</h1>
 <p class="muted">Perguntas e reclamações reunidas em um só lugar.</p>
 
-{% if flash %}<div class="alert alert--ok">{{ flash }}</div>{% endif %}
-{% if error %}<div class="alert alert--error">{{ error }}</div>{% endif %}
+{% if flash %}<div class="alert alert--ok" role="status">{{ flash }}</div>{% endif %}
+{% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
 {% for aviso in avisos %}
 <div class="alert alert--warn">{{ aviso }}</div>
 {% endfor %}

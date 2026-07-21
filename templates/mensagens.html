@@ -9,8 +9,8 @@
 </div>
 <p class="muted">Pedido <code>{{ order_id }}</code></p>
 
-{% if flash %}<div class="alert alert--ok">{{ flash }}</div>{% endif %}
-{% if error %}<div class="alert alert--error">{{ error }}</div>{% endif %}
+{% if flash %}<div class="alert alert--ok" role="status">{{ flash }}</div>{% endif %}
+{% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
 
 <section class="card">
     {% if messages %}

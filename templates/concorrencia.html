@@ -9,7 +9,7 @@
 </div>
 <p class="muted">{{ item.title }} · <code>{{ item.id }}</code> · seu preço: <strong>R$ {{ '%.2f'|format(preco) }}</strong></p>
 
-{% if error %}<div class="alert alert--error">{{ error }}</div>{% endif %}
+{% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
 
 {% if resumo %}
 <div class="grid">
@@ -28,11 +28,11 @@
 </div>
 
 {% if resumo.sou_menor %}
-<div class="alert alert--ok">
+<div class="alert alert--ok" role="status">
     Você tem o <strong>menor preço</strong> entre {{ resumo.total }} ofertas — ótimo para ganhar o destaque do catálogo (buy box)!
 </div>
 {% else %}
-<div class="alert alert--warn">
+<div class="alert alert--warn" role="status">
     Há <strong>{{ resumo.mais_baratos }}</strong> oferta(s) mais barata(s). Seu preço está
     <strong>R$ {{ '%.2f'|format(resumo.diferenca_menor) }}</strong> acima do menor.
     Para disputar o destaque do catálogo, considere reduzir para até
