@@ -3,7 +3,10 @@
 {% block nav %}{% include "_nav.html" %}{% endblock %}
 
 {% block content %}
-<h1>Lucratividade</h1>
+<div class="row">
+    <h1>Lucratividade</h1>
+    {% if linhas %}<a class="btn btn--ghost" href="/lucratividade/exportar">Exportar CSV</a>{% endif %}
+</div>
 <p class="muted">Receita, comissões do Mercado Livre e valor líquido por venda.</p>
 
 {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}

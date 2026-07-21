@@ -502,6 +502,33 @@ def search_orders(seller_id: int, limit: int = 30, date_from: str = "") -> list[
     return data.get("results", [])
 
 
+def search_orders_page(
+    seller_id: int, limit: int = 30, offset: int = 0, date_from: str = ""
+) -> tuple[list[dict], int]:
+    """Retorna (pedidos, total) para paginação."""
+    params = {"seller": seller_id, "sort": "date_desc", "limit": limit, "offset": offset}
+    if date_from:
+        params["order.date_created.from"] = date_from
+    data = api_get("/orders/search", params)
+    total = (data.get("paging") or {}).get("total", 0)
+    return data.get("results", []), total
+
+
+def list_all_orders(seller_id: int, cap: int = 200, date_from: str = "") -> list[dict]:
+    """Lista pedidos do vendedor paginando até o limite `cap`."""
+    pedidos: list[dict] = []
+    offset = 0
+    while len(pedidos) < cap:
+        resultados, total = search_orders_page(seller_id, 50, offset, date_from)
+        if not resultados:
+            break
+        pedidos.extend(resultados)
+        offset += 50
+        if offset >= total:
+            break
+    return pedidos[:cap]
+
+
 def get_order(order_id: str) -> dict:
     return api_get(f"/orders/{order_id}")
 

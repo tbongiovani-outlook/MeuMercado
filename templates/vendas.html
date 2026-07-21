@@ -3,8 +3,12 @@
 {% block nav %}{% include "_nav.html" %}{% endblock %}
 
 {% block content %}
-<h1>Vendas e entregas <span class="badge">{{ orders|length }}</span></h1>
+<div class="row">
+    <h1>Vendas e entregas <span class="badge">{{ total_vendas if total_vendas is not none else orders|length }}</span></h1>
+    {% if orders %}<a class="btn btn--ghost" href="/vendas/exportar">Exportar CSV</a>{% endif %}
+</div>
 
+{% if flash %}<div class="alert alert--ok" role="status">{{ flash }}</div>{% endif %}
 {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
 
 <section class="card">
@@ -35,6 +39,13 @@
             {% endfor %}
         </tbody>
     </table>
+    {% if total_paginas and total_paginas > 1 %}
+    <nav class="paginacao" aria-label="Paginação de vendas">
+        {% if pagina > 1 %}<a class="btn btn--ghost btn--sm" href="/vendas?pagina={{ pagina - 1 }}">‹ Anterior</a>{% endif %}
+        <span class="muted">Página {{ pagina }} de {{ total_paginas }}</span>
+        {% if pagina < total_paginas %}<a class="btn btn--ghost btn--sm" href="/vendas?pagina={{ pagina + 1 }}">Próxima ›</a>{% endif %}
+    </nav>
+    {% endif %}
     {% else %}
     <p class="muted">Nenhuma venda encontrada.</p>
     {% endif %}

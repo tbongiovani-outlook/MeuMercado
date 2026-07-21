@@ -10,10 +10,12 @@ Fluxo de uso (fácil para o usuário final, roda em Windows e macOS):
 import secrets
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
+import csv
+import io
 import re
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
@@ -845,15 +847,19 @@ def aplicar_preco(request: Request, item_id: str, price: float = Form(...)):
 # Vendas e entregas
 # ---------------------------------------------------------------------------
 @app.get("/vendas")
-def vendas(request: Request):
+def vendas(request: Request, pagina: int = 1):
     redirect, _ = _require_ready(request)
     if redirect:
         return redirect
     ctx = _base_context(request)
     orders = []
+    por_pagina = 30
+    total = 0
     try:
         me = meli.get_me()
-        orders = meli.search_orders(me["id"], limit=30)
+        pagina = max(1, pagina)
+        offset = (pagina - 1) * por_pagina
+        orders, total = meli.search_orders_page(me["id"], limit=por_pagina, offset=offset)
         for order in orders:
             ship = order.get("shipping") or {}
             ship_id = ship.get("id")
@@ -866,8 +872,59 @@ def vendas(request: Request):
                     order["shipping_status"] = None
     except Exception as exc:  # noqa: BLE001
         ctx["error"] = f"Não foi possível carregar as vendas: {exc}"
-    ctx["orders"] = orders
+    total_paginas = max(1, (total + por_pagina - 1) // por_pagina)
+    ctx.update({
+        "orders": orders,
+        "pagina": pagina,
+        "total_paginas": total_paginas,
+        "total_vendas": total,
+    })
     return templates.TemplateResponse(request, "vendas.html", ctx)
+
+
+def _csv_response(nome: str, cabecalho: list[str], linhas: list[list]) -> Response:
+    """Monta uma resposta de download CSV (UTF-8 com BOM para Excel)."""
+    buffer = io.StringIO()
+    escritor = csv.writer(buffer, delimiter=";")
+    escritor.writerow(cabecalho)
+    escritor.writerows(linhas)
+    conteudo = "\ufeff" + buffer.getvalue()
+    return Response(
+        content=conteudo,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{nome}"'},
+    )
+
+
+@app.get("/vendas/exportar")
+def exportar_vendas(request: Request):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    linhas = []
+    try:
+        me = meli.get_me()
+        for order in meli.list_all_orders(me["id"]):
+            comprador = (order.get("buyer") or {}).get("nickname", "")
+            itens = order.get("order_items") or []
+            titulo = itens[0]["item"]["title"] if itens else ""
+            qtd = sum(i.get("quantity", 0) for i in itens)
+            linhas.append([
+                (order.get("date_created") or "")[:10],
+                order.get("id", ""),
+                titulo,
+                qtd,
+                f"{order.get('total_amount', 0):.2f}",
+                order.get("status", ""),
+                comprador,
+            ])
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Falha ao exportar vendas")
+        request.session["flash"] = f"Não foi possível exportar as vendas: {exc}"
+        return _redirect("/vendas")
+    cabecalho = ["Data", "Pedido", "Produto", "Qtd", "Total (R$)", "Status", "Comprador"]
+    return _csv_response("vendas.csv", cabecalho, linhas)
+
 
 
 @app.get("/vendas/{order_id}/mensagens")
@@ -1098,6 +1155,35 @@ def lucratividade(request: Request):
     ctx["linhas"] = linhas
     ctx["totais"] = totais
     return templates.TemplateResponse(request, "lucratividade.html", ctx)
+
+
+@app.get("/lucratividade/exportar")
+def exportar_lucratividade(request: Request):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    linhas = []
+    try:
+        me = meli.get_me()
+        for order in meli.list_all_orders(me["id"]):
+            bruto = float(order.get("total_amount") or 0)
+            comissao = sum(
+                float(item.get("sale_fee") or 0)
+                for item in order.get("order_items", [])
+            )
+            linhas.append([
+                (order.get("date_created") or "")[:10],
+                order.get("id", ""),
+                f"{bruto:.2f}",
+                f"{comissao:.2f}",
+                f"{bruto - comissao:.2f}",
+            ])
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Falha ao exportar lucratividade")
+        request.session["flash"] = f"Não foi possível exportar: {exc}"
+        return _redirect("/lucratividade")
+    cabecalho = ["Data", "Pedido", "Bruto (R$)", "Comissão (R$)", "Líquido (R$)"]
+    return _csv_response("lucratividade.csv", cabecalho, linhas)
 
 
 # ---------------------------------------------------------------------------
