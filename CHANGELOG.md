@@ -5,6 +5,10 @@ Registro das mudanças implementadas (gerado automaticamente a cada merge na `ma
 <!-- novas-entradas -->
 ## 2026-07-21
 
+- feat: link para abrir o anuncio no sistema nas telas que o referenciam (#15) (ebfc717)
+
+## 2026-07-21
+
 - feat: caixa de entrada unificada (para resolver hoje) (#13) (38f1ecd)
 
 ## 2026-07-21
