@@ -313,8 +313,10 @@ curl -X POST \
 - [x] ⭐ **Diferencial:** painel pós-venda unificado (perguntas + reclamações)
 - [x] ⭐ **Diferencial:** lucratividade real (comissões das vendas)
 - [x] Painel de estatísticas
+- [x] Gestão de anúncios (pausar / reativar / encerrar)
+- [x] Responder perguntas direto pelo painel
 - [ ] Mensagens pós-venda por pedido (função pronta; falta a interface)
-- [ ] Responder perguntas/reclamações direto pelo painel
+- [ ] Editar preço/estoque do anúncio pelo painel
 
 ---
 
