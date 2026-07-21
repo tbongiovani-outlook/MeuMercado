@@ -19,10 +19,11 @@ import re
 import time
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
-from fastapi.responses import RedirectResponse, Response
+from fastapi.responses import PlainTextResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
+from urllib.parse import urlsplit
 
 from . import auth, database, meli, quality, telemetry
 from .config import settings
@@ -80,9 +81,32 @@ def _executar_tarefa(tarefa: dict) -> None:
 
 
 app = FastAPI(title="Meu Mercado", lifespan=lifespan)
-app.add_middleware(SessionMiddleware, secret_key=settings.app_secret_key)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.app_secret_key,
+    same_site="lax",
+    https_only=False,
+)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+_METODOS_INSEGUROS = {"POST", "PUT", "PATCH", "DELETE"}
+
+
+@app.middleware("http")
+async def _csrf_protecao(request: Request, call_next):
+    """Defesa CSRF: em requisições que alteram estado, exige Origin/Referer do próprio site."""
+    if request.method in _METODOS_INSEGUROS:
+        host = request.headers.get("host", "")
+        origem = request.headers.get("origin") or request.headers.get("referer") or ""
+        if origem:
+            host_origem = urlsplit(origem).netloc
+            if host_origem and host_origem != host:
+                logger.warning("CSRF bloqueado: origem=%s host=%s", origem, host)
+                return PlainTextResponse(
+                    "Requisição bloqueada por segurança (CSRF).", status_code=403
+                )
+    return await call_next(request)
 
 
 def _datetimebr(epoch: int | None) -> str:
