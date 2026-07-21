@@ -267,6 +267,34 @@ h2 { margin-top: 0; font-size: 1.05rem; }
 .actions { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
 .actions form { margin: 0; }
 
+.bulkbar {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin: 0 0 1rem;
+    padding: 0.75rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+.field--inline { margin: 0; }
+.field--inline > span { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.2rem; }
+.field--inline select,
+.field--inline input {
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+.reply__tpl {
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: var(--surface, #fff);
+}
+
 .reply { display: flex; gap: 0.4rem; margin-top: 0.5rem; }
 .reply input[type="text"] {
     flex: 1;

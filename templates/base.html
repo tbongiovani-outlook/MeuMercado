@@ -107,6 +107,16 @@
                 sel.selectedIndex = 0;
             });
         })();
+
+        // Edição em massa: "selecionar todos".
+        (function () {
+            var all = document.getElementById("check-all");
+            if (!all) return;
+            var boxes = document.querySelectorAll('input[name="item_ids"]');
+            all.addEventListener("change", function () {
+                boxes.forEach(function (b) { b.checked = all.checked; });
+            });
+        })();
     </script>
 </body>
 </html>

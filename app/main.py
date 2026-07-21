@@ -629,6 +629,47 @@ def duplicar_anuncio(request: Request, item_id: str):
     return _redirect("/anuncios")
 
 
+@app.post("/anuncios/massa")
+def anuncios_massa(
+    request: Request,
+    acao: str = Form(...),
+    valor: float = Form(...),
+    item_ids: list[str] = Form(default=[]),
+):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    if not item_ids:
+        request.session["flash"] = "Selecione ao menos um anúncio."
+        return _redirect("/anuncios")
+    atualizados, erros = 0, 0
+    for iid in item_ids:
+        try:
+            meli.update_item(iid, _payload_massa(acao, valor, iid))
+            atualizados += 1
+        except Exception:  # noqa: BLE001
+            logger.exception("Falha na edição em massa do item %s", iid)
+            erros += 1
+    msg = f"{atualizados} anúncio(s) atualizado(s)."
+    if erros:
+        msg += f" {erros} falharam."
+    request.session["flash"] = msg
+    return _redirect("/anuncios")
+
+
+def _payload_massa(acao: str, valor: float, item_id: str) -> dict:
+    """Monta o payload de atualização conforme a ação de edição em massa."""
+    if acao == "estoque":
+        return {"available_quantity": max(0, int(valor))}
+    if acao == "preco":
+        return {"price": round(valor, 2)}
+    if acao in {"aumentar", "reduzir"}:
+        atual = meli.get_item(item_id).get("price") or 0
+        fator = 1 + (valor / 100) if acao == "aumentar" else 1 - (valor / 100)
+        return {"price": round(atual * fator, 2)}
+    raise ValueError(f"Ação inválida: {acao}")
+
+
 @app.get("/anuncios/{item_id}/editar")
 def editar_anuncio_form(request: Request, item_id: str):
     redirect, _ = _require_ready(request)

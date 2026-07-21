@@ -13,9 +13,27 @@
 
 <section class="card">
     {% if items %}
+    <form class="bulkbar" method="post" action="/anuncios/massa" id="form-massa"
+          onsubmit="return confirm('Aplicar a alteração aos anúncios selecionados?');">
+        <label class="field field--inline">
+            <span>Edição em massa</span>
+            <select name="acao" aria-label="Ação em massa">
+                <option value="preco">Definir preço (R$)</option>
+                <option value="aumentar">Aumentar preço (%)</option>
+                <option value="reduzir">Reduzir preço (%)</option>
+                <option value="estoque">Definir estoque</option>
+            </select>
+        </label>
+        <label class="field field--inline">
+            <span>Valor</span>
+            <input type="number" name="valor" step="0.01" min="0" required aria-label="Valor da alteração">
+        </label>
+        <button class="btn btn--primary btn--sm" type="submit">Aplicar aos selecionados</button>
+    </form>
     <table class="table">
         <thead>
             <tr>
+                <th><input type="checkbox" id="check-all" aria-label="Selecionar todos"></th>
                 <th></th><th>Título</th><th>Preço</th><th>Estoque</th>
                 <th>Vendidos</th><th>Status</th><th>Ações</th>
             </tr>
@@ -23,6 +41,7 @@
         <tbody>
             {% for it in items %}
             <tr>
+                <td><input type="checkbox" name="item_ids" value="{{ it.id }}" form="form-massa" aria-label="Selecionar {{ it.title }}"></td>
                 <td>{% if it.thumbnail %}<img src="{{ it.thumbnail }}" alt="Foto de {{ it.title }}" width="40" height="40">{% endif %}</td>
                 <td>{{ it.title }}</td>
                 <td>{{ it.price }}</td>
