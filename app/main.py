@@ -23,6 +23,7 @@ from fastapi.responses import PlainTextResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from urllib.parse import urlsplit
 
 from . import auth, database, meli, quality, telemetry
@@ -107,6 +108,67 @@ async def _csrf_protecao(request: Request, call_next):
                     "Requisição bloqueada por segurança (CSRF).", status_code=403
                 )
     return await call_next(request)
+
+
+def _pagina_erro(request, *, codigo, titulo, mensagem, detalhe, icone, status):
+    """Renderiza a página de erro com a identidade do app; degrada para texto puro."""
+    try:
+        ctx = _base_context(request)
+    except Exception:  # noqa: BLE001 — em erro grave o contexto pode falhar
+        ctx = {"username": "", "error": None, "flash": None, "badges": {}}
+    ctx.update(
+        {
+            "codigo": codigo,
+            "titulo": titulo,
+            "mensagem": mensagem,
+            "detalhe": detalhe,
+            "icone": icone,
+        }
+    )
+    try:
+        return templates.TemplateResponse(request, "erro.html", ctx, status_code=status)
+    except Exception:  # noqa: BLE001
+        return PlainTextResponse(f"{codigo} — {titulo}", status_code=status)
+
+
+@app.exception_handler(StarletteHTTPException)
+async def _erro_http(request: Request, exc: StarletteHTTPException):
+    if exc.status_code == 404:
+        return _pagina_erro(
+            request,
+            codigo=404,
+            titulo="Página não encontrada",
+            mensagem="O endereço que você tentou abrir não existe por aqui.",
+            detalhe="Verifique o link ou volte para o painel principal.",
+            icone="🧭",
+            status=404,
+        )
+    if exc.status_code >= 500:
+        return _pagina_erro(
+            request,
+            codigo=exc.status_code,
+            titulo="Algo deu errado",
+            mensagem="Tivemos um problema ao processar sua solicitação.",
+            detalhe="Tente novamente em instantes. Se persistir, reinicie o app.",
+            icone="🛠️",
+            status=exc.status_code,
+        )
+    # Demais erros HTTP (401/403/405…): resposta simples, sem página completa.
+    return PlainTextResponse(str(exc.detail), status_code=exc.status_code)
+
+
+@app.exception_handler(Exception)
+async def _erro_interno(request: Request, exc: Exception):
+    logger.exception("Erro interno não tratado: %s", exc)
+    return _pagina_erro(
+        request,
+        codigo=500,
+        titulo="Algo deu errado",
+        mensagem="Tivemos um problema ao processar sua solicitação.",
+        detalhe="Tente novamente em instantes. Se persistir, reinicie o app.",
+        icone="🛠️",
+        status=500,
+    )
 
 
 def _datetimebr(epoch: int | None) -> str:

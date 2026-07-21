@@ -848,6 +848,7 @@ code {
 }
 .empty__title { margin: 0 0 0.3rem; font-weight: 700; color: var(--text); font-size: 1.02rem; }
 .empty p { margin: 0 auto; max-width: 46ch; }
+.empty__actions { margin-top: 1.15rem; }
 
 /* Telas de autenticação (entrar / criar conta) */
 .auth {
