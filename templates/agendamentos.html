@@ -65,6 +65,7 @@
                     {% if t.status == 'erro' and t.resultado %}<br><small class="muted">{{ t.resultado }}</small>{% endif %}
                 </td>
                 <td>
+                    {% if t.item_id %}<a class="btn btn--ghost btn--sm btn--icon has-tip" data-tip="Ver anúncio" href="/anuncios/{{ t.item_id }}/editar" aria-label="Ver anúncio"><span class="ico" aria-hidden="true">🏷️</span></a>{% endif %}
                     {% if t.status == 'pendente' %}
                     <form method="post" action="/agendamentos/{{ t.id }}/cancelar"
                           onsubmit="return confirm('Cancelar este agendamento?');">

@@ -44,6 +44,7 @@
         <li>
             <strong>{{ q.text }}</strong><br>
             <small class="muted">item {{ q.item_id }} · {{ (q.date_created or '')[:10] }}</small>
+            {% if q.item_id %}<a class="btn btn--ghost btn--sm" href="/anuncios/{{ q.item_id }}/editar">Ver anúncio</a>{% endif %}
             <form class="reply" method="post" action="/caixa-entrada/responder">
                 <input type="hidden" name="question_id" value="{{ q.id }}">
                 {% if respostas %}
@@ -106,6 +107,7 @@
             </small>
             <br>
             <a class="btn btn--ghost btn--sm" href="/vendas/{{ o.id }}/mensagens">Falar com o comprador</a>
+            {% if o.order_items and o.order_items[0].item and o.order_items[0].item.id %}<a class="btn btn--ghost btn--sm" href="/anuncios/{{ o.order_items[0].item.id }}/editar">Ver anúncio</a>{% endif %}
         </li>
         {% endfor %}
     </ul>

@@ -50,6 +50,7 @@
                 {% endif %}
                 <br>
                 <small class="muted">item {{ q.item_id }} · {{ (q.date_created or '')[:10] }} · {{ q.status }}</small>
+                {% if q.item_id %}<br><a class="btn btn--ghost btn--sm" href="/anuncios/{{ q.item_id }}/editar">Ver anúncio</a>{% endif %}
                 {% if q.status == 'UNANSWERED' %}
                 <form class="reply" method="post" action="/pos-venda/responder">
                     <input type="hidden" name="question_id" value="{{ q.id }}">

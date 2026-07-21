@@ -15,6 +15,7 @@
         {% if resultado.item.permalink %}
         — <a href="{{ resultado.item.permalink }}" target="_blank" rel="noopener">ver no Mercado Livre</a>
         {% endif %}
+        <br><a class="btn btn--ghost btn--sm" href="/anuncios/{{ resultado.item.id }}/editar">Ver anúncio no sistema</a>
         {% if resultado.catalog_product %}
         <br><small>Vinculado ao produto de catálogo:
             <strong>{{ resultado.catalog_product.name }}</strong>

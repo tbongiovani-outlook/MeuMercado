@@ -54,7 +54,10 @@
                 <td>{{ it.title }}</td>
                 <td>R$ {{ '%.2f'|format(it.price or 0) }}</td>
                 <td><span class="badge">{{ it.status }}</span></td>
-                <td><a class="btn btn--ghost btn--sm" href="/promocoes/{{ it.id }}">Ver ofertas</a></td>
+                <td>
+                    <a class="btn btn--ghost btn--sm" href="/anuncios/{{ it.id }}/editar">Ver anúncio</a>
+                    <a class="btn btn--ghost btn--sm" href="/promocoes/{{ it.id }}">Ver ofertas</a>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
