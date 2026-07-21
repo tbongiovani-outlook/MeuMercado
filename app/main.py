@@ -425,6 +425,42 @@ def anuncio_status(request: Request, item_id: str, status: str = Form(...)):
     return _redirect("/anuncios")
 
 
+@app.get("/anuncios/{item_id}/editar")
+def editar_anuncio_form(request: Request, item_id: str):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    ctx = _base_context(request)
+    try:
+        ctx["item"] = meli.get_item(item_id)
+    except Exception as exc:  # noqa: BLE001
+        request.session["flash"] = f"Não foi possível abrir o anúncio: {exc}"
+        return _redirect("/anuncios")
+    return templates.TemplateResponse(request, "editar_anuncio.html", ctx)
+
+
+@app.post("/anuncios/{item_id}/editar")
+def editar_anuncio(
+    request: Request,
+    item_id: str,
+    price: float = Form(...),
+    available_quantity: int = Form(...),
+):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    try:
+        meli.update_item(
+            item_id, {"price": price, "available_quantity": available_quantity}
+        )
+        request.session["flash"] = f"Anúncio {item_id} atualizado."
+        logger.info("Anúncio %s atualizado (preço/estoque).", item_id)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Falha ao atualizar anúncio")
+        request.session["flash"] = f"Não foi possível atualizar o anúncio: {exc}"
+    return _redirect("/anuncios")
+
+
 # ---------------------------------------------------------------------------
 # Vendas e entregas
 # ---------------------------------------------------------------------------

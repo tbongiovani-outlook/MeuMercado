@@ -166,6 +166,11 @@ def update_item_status(item_id: str, status: str) -> dict:
     return api_put(f"/items/{item_id}", {"status": status})
 
 
+def update_item(item_id: str, payload: dict) -> dict:
+    """Atualiza campos de um anúncio (ex.: price, available_quantity)."""
+    return api_put(f"/items/{item_id}", payload)
+
+
 def answer_question(question_id: int, text: str) -> dict:
     """Responde a uma pergunta de um anúncio."""
     return api_post("/answers", {"question_id": question_id, "text": text})

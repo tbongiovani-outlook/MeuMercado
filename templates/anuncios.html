@@ -32,6 +32,9 @@
                 <td>
                     <div class="actions">
                         {% if it.permalink %}<a class="btn btn--ghost btn--sm" href="{{ it.permalink }}" target="_blank" rel="noopener">Ver</a>{% endif %}
+                        {% if it.status != 'closed' %}
+                        <a class="btn btn--ghost btn--sm" href="/anuncios/{{ it.id }}/editar">Editar</a>
+                        {% endif %}
                         {% if it.status == 'active' %}
                         <form method="post" action="/anuncios/{{ it.id }}/status">
                             <input type="hidden" name="status" value="paused">
