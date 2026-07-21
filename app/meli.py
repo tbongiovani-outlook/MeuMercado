@@ -281,6 +281,26 @@ def search_catalog_products(query: str, limit: int = 10) -> list[dict]:
     return data.get("results", [])
 
 
+def get_catalog_competitors(product_id: str) -> list[dict]:
+    """Lista as ofertas concorrentes de um produto de catálogo."""
+    data = api_get(f"/products/{product_id}/items")
+    return data.get("results", [])
+
+
+def get_catalog_product(product_id: str) -> dict:
+    """Detalhes de um produto de catálogo (inclui buy_box_winner)."""
+    return api_get(f"/products/{product_id}")
+
+
+def get_price_suggestion(item_id: str) -> dict:
+    """Sugestão de preço competitivo do ML (vazio se não houver)."""
+    try:
+        return api_get(f"/suggestions/items/{item_id}/details")
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+
 def publish_catalog_item(
     catalog_product_id: str,
     price: float,

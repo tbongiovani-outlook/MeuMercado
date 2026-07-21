@@ -495,6 +495,43 @@ def qualidade_anuncio(request: Request, item_id: str):
     return templates.TemplateResponse(request, "qualidade.html", ctx)
 
 
+@app.get("/anuncios/{item_id}/concorrencia")
+def concorrencia_anuncio(request: Request, item_id: str):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    ctx = _base_context(request)
+    ctx.update({"competidores": [], "resumo": None, "sugestao": None, "preco": 0})
+    try:
+        item = meli.get_item(item_id)
+        ctx["item"] = item
+        preco = float(item.get("price") or 0)
+        ctx["preco"] = preco
+        catalog_id = item.get("catalog_product_id")
+
+        if catalog_id:
+            comps = meli.get_catalog_competitors(catalog_id)
+            comps = sorted(comps, key=lambda c: c.get("price") or 0)
+            ctx["competidores"] = comps
+            precos = [float(c["price"]) for c in comps if c.get("price")]
+            if precos:
+                menor = min(precos)
+                ctx["resumo"] = {
+                    "menor": menor,
+                    "maior": max(precos),
+                    "media": round(sum(precos) / len(precos), 2),
+                    "total": len(precos),
+                    "mais_baratos": sum(1 for p in precos if p < preco),
+                    "sou_menor": preco <= menor,
+                    "diferenca_menor": round(preco - menor, 2),
+                }
+        else:
+            ctx["sugestao"] = meli.get_price_suggestion(item_id) or None
+    except Exception as exc:  # noqa: BLE001
+        ctx["error"] = f"Não foi possível carregar a concorrência: {exc}"
+    return templates.TemplateResponse(request, "concorrencia.html", ctx)
+
+
 # ---------------------------------------------------------------------------
 # Vendas e entregas
 # ---------------------------------------------------------------------------
@@ -633,12 +670,15 @@ def estatisticas(request: Request):
                 visits = v.get(it["id"], 0) if isinstance(v, dict) else 0
             except Exception:  # noqa: BLE001
                 visits = 0
+            sold = it.get("sold_quantity", 0)
+            conversao = round(100 * sold / visits, 1) if visits else None
             linhas.append(
                 {
                     "id": it.get("id"),
                     "title": it.get("title"),
                     "visits": visits,
-                    "sold": it.get("sold_quantity", 0),
+                    "sold": sold,
+                    "conversao": conversao,
                 }
             )
     except Exception as exc:  # noqa: BLE001

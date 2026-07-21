@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Concorrência · Meu Mercado{% endblock %}
+{% block nav %}{% include "_nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <h1>Concorrência e preço</h1>
+    <a class="btn btn--ghost" href="/anuncios">Voltar</a>
+</div>
+<p class="muted">{{ item.title }} · <code>{{ item.id }}</code> · seu preço: <strong>R$ {{ '%.2f'|format(preco) }}</strong></p>
+
+{% if error %}<div class="alert alert--error">{{ error }}</div>{% endif %}
+
+{% if resumo %}
+<div class="grid">
+    <section class="card card--center">
+        <h2>Menor preço</h2>
+        <p><strong>R$ {{ '%.2f'|format(resumo.menor) }}</strong></p>
+    </section>
+    <section class="card card--center">
+        <h2>Preço médio</h2>
+        <p><strong>R$ {{ '%.2f'|format(resumo.media) }}</strong></p>
+    </section>
+    <section class="card card--center">
+        <h2>Maior preço</h2>
+        <p><strong>R$ {{ '%.2f'|format(resumo.maior) }}</strong></p>
+    </section>
+</div>
+
+{% if resumo.sou_menor %}
+<div class="alert alert--ok">
+    Você tem o <strong>menor preço</strong> entre {{ resumo.total }} ofertas — ótimo para ganhar o destaque do catálogo (buy box)!
+</div>
+{% else %}
+<div class="alert alert--warn">
+    Há <strong>{{ resumo.mais_baratos }}</strong> oferta(s) mais barata(s). Seu preço está
+    <strong>R$ {{ '%.2f'|format(resumo.diferenca_menor) }}</strong> acima do menor.
+    Para disputar o destaque do catálogo, considere reduzir para até
+    <strong>R$ {{ '%.2f'|format(resumo.menor) }}</strong>.
+    <br><a class="btn btn--primary btn--sm" href="/anuncios/{{ item.id }}/editar">Ajustar preço</a>
+</div>
+{% endif %}
+
+<section class="card">
+    <h2>Ofertas concorrentes <span class="badge">{{ competidores|length }}</span></h2>
+    <table class="table">
+        <thead>
+            <tr><th>Preço</th><th>Frete grátis</th><th>Vendidos</th><th>Tipo</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for c in competidores %}
+            <tr {% if c.id == item.id %}class="is-me"{% endif %}>
+                <td>R$ {{ '%.2f'|format(c.price) }}
+                    {% if c.id == item.id %}<span class="tag tag--alta">Você</span>{% endif %}</td>
+                <td>{% if c.shipping and c.shipping.free_shipping %}Sim{% else %}Não{% endif %}</td>
+                <td>{{ c.sold_quantity or 0 }}</td>
+                <td>{{ c.listing_type_id or '—' }}</td>
+                <td>{% if c.permalink %}<a href="{{ c.permalink }}" target="_blank" rel="noopener">ver</a>{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% elif sugestao and sugestao.suggested_price %}
+<section class="card">
+    <h2>Sugestão de preço do Mercado Livre</h2>
+    <p>Status: <strong>{{ sugestao.status }}</strong></p>
+    <p>Preço sugerido para competir melhor:
+        <strong>R$ {{ '%.2f'|format(sugestao.suggested_price.amount) }}</strong></p>
+    <a class="btn btn--primary btn--sm" href="/anuncios/{{ item.id }}/editar">Ajustar preço</a>
+</section>
+{% else %}
+<section class="card">
+    <p class="muted">
+        Este anúncio não está vinculado a um produto de catálogo e o Mercado Livre
+        não retornou sugestão de preço. A análise de concorrência por preço está
+        disponível principalmente para anúncios de catálogo.
+    </p>
+</section>
+{% endif %}
+{% endblock %}

@@ -4,7 +4,7 @@
 
 {% block content %}
 <h1>Estatísticas dos anúncios</h1>
-<p class="muted">Visitas e vendas por anúncio.</p>
+<p class="muted">Visitas, vendas e taxa de conversão por anúncio.</p>
 
 {% if error %}<div class="alert alert--error">{{ error }}</div>{% endif %}
 
@@ -12,7 +12,7 @@
     {% if linhas %}
     <table class="table">
         <thead>
-            <tr><th>Anúncio</th><th>Visitas</th><th>Vendidos</th></tr>
+            <tr><th>Anúncio</th><th>Visitas</th><th>Vendidos</th><th>Conversão</th></tr>
         </thead>
         <tbody>
             {% for l in linhas %}
@@ -20,10 +20,13 @@
                 <td>{{ l.title }}<br><small class="muted"><code>{{ l.id }}</code></small></td>
                 <td>{{ l.visits }}</td>
                 <td>{{ l.sold }}</td>
+                <td>{% if l.conversao is not none %}{{ l.conversao }}%{% else %}<span class="muted">—</span>{% endif %}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    <p class="hint">Conversão = vendas ÷ visitas. Uma conversão baixa com muitas visitas
+        pode indicar preço alto ou anúncio pouco atrativo — veja a aba <strong>Qualidade</strong> e <strong>Concorrência</strong>.</p>
     {% else %}
     <p class="muted">Sem dados de estatísticas.</p>
     {% endif %}
