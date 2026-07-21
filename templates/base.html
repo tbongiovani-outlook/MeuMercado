@@ -9,15 +9,22 @@
 <body>
     <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
     <header class="topbar">
+        <button class="hamburger" id="menu-toggle" aria-label="Abrir menu"
+                aria-expanded="false" aria-controls="sidebar">☰</button>
         <a class="brand" href="/">🛒 Meu Mercado</a>
-        {% block nav %}{% endblock %}
     </header>
-    <main class="container" id="conteudo" tabindex="-1">
-        {% block content %}{% endblock %}
-    </main>
-    <footer class="footer">
-        <small>Meu Mercado · integração com a API do Mercado Livre</small>
-    </footer>
+    <div class="layout">
+        <div class="sidebar__overlay" id="sidebar-overlay" hidden></div>
+        <aside class="sidebar" id="sidebar">
+            {% block nav %}{% endblock %}
+        </aside>
+        <main class="container" id="conteudo" tabindex="-1">
+            {% block content %}{% endblock %}
+            <footer class="footer">
+                <small>Meu Mercado · integração com a API do Mercado Livre</small>
+            </footer>
+        </main>
+    </div>
     <script>
         // Evita envio duplicado e dá feedback em formulários (boa prática de UX).
         document.addEventListener("submit", function (e) {
@@ -30,6 +37,33 @@
                 btn.textContent = "Enviando…";
             }
         });
+
+        // Menu lateral responsivo (hambúrguer).
+        (function () {
+            var toggle = document.getElementById("menu-toggle");
+            var sidebar = document.getElementById("sidebar");
+            var overlay = document.getElementById("sidebar-overlay");
+            if (!toggle || !sidebar) return;
+            // Sem itens de menu (telas de login): esconde o botão.
+            if (!sidebar.querySelector(".nav")) { toggle.style.display = "none"; return; }
+
+            function setOpen(open) {
+                sidebar.classList.toggle("sidebar--open", open);
+                toggle.setAttribute("aria-expanded", open ? "true" : "false");
+                toggle.setAttribute("aria-label", open ? "Fechar menu" : "Abrir menu");
+                if (overlay) overlay.hidden = !open;
+            }
+            toggle.addEventListener("click", function () {
+                setOpen(!sidebar.classList.contains("sidebar--open"));
+            });
+            if (overlay) overlay.addEventListener("click", function () { setOpen(false); });
+            sidebar.addEventListener("click", function (e) {
+                if (e.target.closest("a")) setOpen(false);
+            });
+            document.addEventListener("keydown", function (e) {
+                if (e.key === "Escape") setOpen(false);
+            });
+        })();
     </script>
 </body>
 </html>
