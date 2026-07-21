@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from . import auth, database, meli, telemetry
+from . import auth, database, meli, quality, telemetry
 from .config import settings
 
 # Configura logging em arquivo assim que o módulo é importado.
@@ -472,6 +472,27 @@ def editar_anuncio(
         logger.exception("Falha ao atualizar anúncio")
         request.session["flash"] = f"Não foi possível atualizar o anúncio: {exc}"
     return _redirect("/anuncios")
+
+
+@app.get("/anuncios/{item_id}/qualidade")
+def qualidade_anuncio(request: Request, item_id: str):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    ctx = _base_context(request)
+    try:
+        item = meli.get_item(item_id)
+        descricao = meli.get_item_description(item_id)
+        try:
+            attrs = meli.get_category_attributes(item.get("category_id", ""))
+        except Exception:  # noqa: BLE001
+            attrs = []
+        ctx["item"] = item
+        ctx["avaliacao"] = quality.evaluate(item, descricao, attrs)
+    except Exception as exc:  # noqa: BLE001
+        request.session["flash"] = f"Não foi possível avaliar o anúncio: {exc}"
+        return _redirect("/anuncios")
+    return templates.TemplateResponse(request, "qualidade.html", ctx)
 
 
 # ---------------------------------------------------------------------------

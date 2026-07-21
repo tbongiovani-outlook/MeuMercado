@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Qualidade do anúncio · Meu Mercado{% endblock %}
+{% block nav %}{% include "_nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <h1>Qualidade e posicionamento</h1>
+    <a class="btn btn--ghost" href="/anuncios">Voltar</a>
+</div>
+<p class="muted">{{ item.title }} · <code>{{ item.id }}</code></p>
+
+{% if error %}<div class="alert alert--error">{{ error }}</div>{% endif %}
+
+<section class="card">
+    <div class="score">
+        <div class="score__number">{{ avaliacao.percent }}<span>/100</span></div>
+        <div class="score__bar" role="progressbar" aria-valuenow="{{ avaliacao.percent }}"
+             aria-valuemin="0" aria-valuemax="100" aria-label="Índice de qualidade">
+            <div class="score__fill score__fill--{{ avaliacao.nivel|lower|replace(' ', '-')|replace('à', 'a') }}"
+                 style="width: {{ avaliacao.percent }}%"></div>
+        </div>
+        <div class="score__nivel">{{ avaliacao.nivel }}</div>
+    </div>
+    <p class="muted">
+        Quanto maior o índice, maior a chance de o anúncio aparecer bem posicionado
+        nas buscas do Mercado Livre. Resolva primeiro os itens de peso <strong>Alta</strong>.
+    </p>
+</section>
+
+<section class="card">
+    <h2>Checklist</h2>
+    <ul class="checklist">
+        {% for c in avaliacao.checks %}
+        <li class="checklist__item">
+            <span class="checklist__icon {% if c.ok %}is-ok{% else %}is-off{% endif %}"
+                  aria-hidden="true">{% if c.ok %}✓{% else %}!{% endif %}</span>
+            <div>
+                <strong>{{ c.titulo }}</strong>
+                <span class="tag tag--{{ c.peso|lower }}">{{ c.peso }}</span>
+                <p class="muted">{{ c.dica }}</p>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    <div class="actions">
+        <a class="btn btn--ghost btn--sm" href="/anuncios/{{ item.id }}/editar">Editar preço/estoque</a>
+        {% if item.permalink %}<a class="btn btn--ghost btn--sm" href="{{ item.permalink }}" target="_blank" rel="noopener">Ver no Mercado Livre</a>{% endif %}
+    </div>
+</section>
+
+<section class="card">
+    <h2>Como vender mais e ranquear melhor</h2>
+    <ul class="list">
+        <li><strong>Reputação verde:</strong> entregue no prazo e evite cancelamentos/reclamações — a reputação pesa muito no posicionamento.</li>
+        <li><strong>Mercado Envios Full:</strong> produtos no fulfillment ganham mais exposição e o selo de entrega rápida.</li>
+        <li><strong>Preço competitivo:</strong> no catálogo, o menor preço com boa reputação ganha o destaque (buy box).</li>
+        <li><strong>Responda rápido:</strong> perguntas respondidas rapidamente melhoram a experiência e a conversão.</li>
+        <li><strong>Catálogo:</strong> publicar no catálogo aumenta a visibilidade do anúncio.</li>
+    </ul>
+</section>
+{% endblock %}

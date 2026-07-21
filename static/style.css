@@ -113,6 +113,35 @@ h2 { margin-top: 0; font-size: 1.05rem; }
 .chat__msg--me { align-self: flex-end; background: #eef3ff; border-color: #c9d8ff; }
 .chat__msg p { margin: 0 0 0.25rem; }
 
+/* Índice de qualidade */
+.score { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem; }
+.score__number { font-size: 2.2rem; font-weight: 800; color: var(--primary-ink); }
+.score__number span { font-size: 1rem; font-weight: 600; color: var(--muted); }
+.score__bar { height: 14px; background: var(--border); border-radius: 999px; overflow: hidden; }
+.score__fill { height: 100%; border-radius: 999px; background: #f59e0b; transition: width .3s; }
+.score__fill--ótimo, .score__fill--otimo { background: #22c55e; }
+.score__fill--bom { background: #84cc16; }
+.score__fill--a-melhorar { background: #f59e0b; }
+.score__nivel { font-weight: 700; }
+
+.checklist { list-style: none; margin: 0 0 1rem; padding: 0; display: flex; flex-direction: column; gap: 0.9rem; }
+.checklist__item { display: flex; gap: 0.75rem; align-items: flex-start; }
+.checklist__item p { margin: 0.25rem 0 0; }
+.checklist__icon {
+    flex: 0 0 auto;
+    width: 26px; height: 26px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 999px; font-weight: 800; color: #fff;
+}
+.checklist__icon.is-ok { background: #22c55e; }
+.checklist__icon.is-off { background: #f59e0b; }
+
+.tag { display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 0.1rem 0.5rem;
+    border-radius: 999px; margin-left: 0.4rem; vertical-align: middle; }
+.tag--alta { background: #fee2e2; color: #b91c1c; }
+.tag--média, .tag--media { background: #fef3c7; color: #92400e; }
+.tag--básica, .tag--basica { background: #e5e7eb; color: #374151; }
+
 .alert {
     padding: 0.75rem 1rem;
     border-radius: 8px;
@@ -128,6 +157,31 @@ h2 { margin-top: 0; font-size: 1.05rem; }
 .form { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; text-align: left; }
 .field { display: flex; flex-direction: column; gap: 0.35rem; }
 .field > span { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+
+/* Agrupamento de campos (Lei da Proximidade) */
+.fieldset {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.1rem 1.15rem;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+.fieldset legend {
+    font-weight: 700;
+    color: var(--primary-ink);
+    padding: 0 0.4rem;
+    font-size: 0.95rem;
+}
+.hint { color: var(--muted); font-size: 0.8rem; }
+.req { color: var(--error); font-style: normal; }
+
+/* Tabelas roláveis em telas pequenas */
+@media (max-width: 640px) {
+    .table { display: block; overflow-x: auto; white-space: nowrap; }
+}
+
 .field input {
     padding: 0.6rem 0.75rem;
     border: 1px solid var(--border);

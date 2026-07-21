@@ -32,6 +32,7 @@
                 <td>
                     <div class="actions">
                         {% if it.permalink %}<a class="btn btn--ghost btn--sm" href="{{ it.permalink }}" target="_blank" rel="noopener">Ver</a>{% endif %}
+                        <a class="btn btn--ghost btn--sm" href="/anuncios/{{ it.id }}/qualidade">Qualidade</a>
                         {% if it.status != 'closed' %}
                         <a class="btn btn--ghost btn--sm" href="/anuncios/{{ it.id }}/editar">Editar</a>
                         {% endif %}

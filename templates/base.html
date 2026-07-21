@@ -17,5 +17,18 @@
     <footer class="footer">
         <small>Meu Mercado · integração com a API do Mercado Livre</small>
     </footer>
+    <script>
+        // Evita envio duplicado e dá feedback em formulários (boa prática de UX).
+        document.addEventListener("submit", function (e) {
+            var form = e.target;
+            if (!(form instanceof HTMLFormElement)) return;
+            var btn = form.querySelector('button[type="submit"], button:not([type])');
+            if (btn && !btn.disabled) {
+                btn.dataset.label = btn.textContent;
+                btn.disabled = true;
+                btn.textContent = "Enviando…";
+            }
+        });
+    </script>
 </body>
 </html>

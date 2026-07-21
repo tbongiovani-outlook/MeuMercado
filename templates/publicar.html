@@ -31,71 +31,84 @@
 
 <section class="card">
     <form class="form" method="post" action="/publicar" enctype="multipart/form-data">
-        <label class="field">
-            <span>Título do anúncio</span>
-            <input type="text" name="title" required value="{{ form.title or '' }}"
-                   placeholder="Ex.: Água Mineral Minalba 1 Litro">
-        </label>
-
-        <div class="row">
+        <fieldset class="fieldset">
+            <legend>Sobre o produto</legend>
             <label class="field">
-                <span>Preço (R$)</span>
-                <input type="number" step="0.01" min="0" name="price" required
-                       value="{{ form.price or '' }}" placeholder="10000">
+                <span>Título do anúncio <em class="req">*</em></span>
+                <input type="text" name="title" required value="{{ form.title or '' }}"
+                       placeholder="Ex.: Água Mineral Minalba 1 Litro">
+                <small class="hint">Inclua marca, modelo e características principais (até 60 caracteres).</small>
             </label>
             <label class="field">
-                <span>Quantidade</span>
-                <input type="number" min="1" name="available_quantity"
-                       value="{{ form.available_quantity or 1 }}">
-            </label>
-        </div>
-
-        <div class="row">
-            <label class="field">
-                <span>Condição</span>
-                <select name="condition">
-                    <option value="new" {% if form.condition == 'used' %}{% else %}selected{% endif %}>Novo</option>
-                    <option value="used" {% if form.condition == 'used' %}selected{% endif %}>Usado</option>
-                </select>
+                <span>Marca</span>
+                <input type="text" name="marca" value="{{ form.marca or '' }}"
+                       placeholder="Ex.: Minalba">
             </label>
             <label class="field">
-                <span>Tipo de anúncio</span>
-                <select name="listing_type_id">
-                    <option value="free" {% if form.listing_type_id in (None, '', 'free') %}selected{% endif %}>Grátis</option>
-                    <option value="gold_special" {% if form.listing_type_id == 'gold_special' %}selected{% endif %}>Clássico</option>
-                    <option value="gold_pro" {% if form.listing_type_id == 'gold_pro' %}selected{% endif %}>Premium</option>
-                </select>
+                <span>Categoria</span>
+                <input type="text" name="category_id" value="{{ form.category_id or '' }}"
+                       placeholder="MLB1234">
+                <small class="hint">Opcional — deixe vazio para prever automaticamente pelo título.</small>
             </label>
-        </div>
+        </fieldset>
 
-        <label class="field">
-            <span>URL da imagem</span>
-            <input type="url" name="image_url" value="{{ form.image_url or '' }}"
-                   placeholder="https://.../foto.jpg">
-        </label>
+        <fieldset class="fieldset">
+            <legend>Preço e estoque</legend>
+            <div class="row">
+                <label class="field">
+                    <span>Preço (R$) <em class="req">*</em></span>
+                    <input type="number" step="0.01" min="0" name="price" required
+                           value="{{ form.price or '' }}" placeholder="10000">
+                </label>
+                <label class="field">
+                    <span>Quantidade</span>
+                    <input type="number" min="1" name="available_quantity"
+                           value="{{ form.available_quantity or 1 }}">
+                </label>
+            </div>
+            <div class="row">
+                <label class="field">
+                    <span>Condição</span>
+                    <select name="condition">
+                        <option value="new" {% if form.condition == 'used' %}{% else %}selected{% endif %}>Novo</option>
+                        <option value="used" {% if form.condition == 'used' %}selected{% endif %}>Usado</option>
+                    </select>
+                </label>
+                <label class="field">
+                    <span>Tipo de anúncio</span>
+                    <select name="listing_type_id">
+                        <option value="free" {% if form.listing_type_id in (None, '', 'free') %}selected{% endif %}>Grátis</option>
+                        <option value="gold_special" {% if form.listing_type_id == 'gold_special' %}selected{% endif %}>Clássico</option>
+                        <option value="gold_pro" {% if form.listing_type_id == 'gold_pro' %}selected{% endif %}>Premium</option>
+                    </select>
+                </label>
+            </div>
+            <small class="hint">Clássico e Premium têm mais exposição que o Grátis.</small>
+        </fieldset>
 
-        <label class="field">
-            <span>Ou envie uma imagem do computador</span>
-            <input type="file" name="image_file" accept="image/*">
-        </label>
+        <fieldset class="fieldset">
+            <legend>Imagem</legend>
+            <label class="field">
+                <span>URL da imagem</span>
+                <input type="url" name="image_url" value="{{ form.image_url or '' }}"
+                       placeholder="https://.../foto.jpg">
+            </label>
+            <label class="field">
+                <span>Ou envie uma imagem do computador</span>
+                <input type="file" name="image_file" accept="image/*">
+                <small class="hint">Use fotos com fundo branco e boa resolução. Várias fotos melhoram o posicionamento.</small>
+            </label>
+        </fieldset>
 
-        <label class="field">
-            <span>Marca</span>
-            <input type="text" name="marca" value="{{ form.marca or '' }}"
-                   placeholder="Ex.: Minalba">
-        </label>
-
-        <label class="field">
-            <span>Código de barras (GTIN/EAN) — deixe vazio se não tiver</span>
-            <input type="text" name="gtin" value="{{ form.gtin or '' }}"
-                   placeholder="Ex.: 7891234567890">
-        </label>
-
-        <label class="field">
-            <span>Categoria (opcional — deixe vazio para prever pelo título)</span>
-            <input type="text" name="category_id" value="{{ form.category_id or '' }}"
-                   placeholder="MLB1234">
-        </label>
+        <fieldset class="fieldset">
+            <legend>Código de barras</legend>
+            <label class="field">
+                <span>GTIN / EAN</span>
+                <input type="text" name="gtin" value="{{ form.gtin or '' }}"
+                       placeholder="Ex.: 7891234567890">
+                <small class="hint">Deixe vazio se o produto não tiver código de barras.</small>
+            </label>
+        </fieldset>
 
         <button class="btn btn--primary" type="submit">Publicar</button>
     </form>

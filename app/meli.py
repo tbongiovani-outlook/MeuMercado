@@ -363,6 +363,15 @@ def get_item(item_id: str) -> dict:
     return api_get(f"/items/{item_id}")
 
 
+def get_item_description(item_id: str) -> str:
+    """Retorna o texto da descrição do anúncio (vazio se não houver)."""
+    try:
+        data = api_get(f"/items/{item_id}/description")
+    except Exception:  # noqa: BLE001
+        return ""
+    return (data.get("plain_text") or data.get("text") or "").strip()
+
+
 def list_item_ids(user_id: int, limit: int = 50) -> list[str]:
     data = api_get(f"/users/{user_id}/items/search", {"limit": limit})
     return data.get("results", [])
