@@ -36,6 +36,13 @@
     {% if q or status_filtro %}<a class="btn btn--ghost btn--sm" href="/anuncios">Limpar</a>{% endif %}
 </form>
 
+{% if cache_em %}
+<p class="cache-info">
+    <span class="muted">Dados de {{ cache_em | datetimebr }}</span>
+    <a class="btn btn--ghost btn--sm" href="/anuncios?atualizar=1&q={{ q or '' }}&status={{ status_filtro or '' }}">Atualizar agora</a>
+</p>
+{% endif %}
+
 <section class="card">
     {% if items %}
     <form class="bulkbar" method="post" action="/anuncios/massa" id="form-massa"

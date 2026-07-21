@@ -209,6 +209,17 @@ def _cache_gravar(chave: str, dados) -> int:
     return database.cache_set(chave, json.dumps(dados, default=str))
 
 
+def _invalidar_cache_itens() -> None:
+    """Descarta o cache de anúncios/promoções após uma alteração de itens."""
+    try:
+        me, _ = _me_cached()
+        uid = me["id"]
+        database.cache_delete(f"anuncios:{uid}")
+        database.cache_delete(f"promocoes:{uid}")
+    except Exception:  # noqa: BLE001 — invalidação nunca deve quebrar a ação
+        logger.debug("Não foi possível invalidar o cache de itens.", exc_info=True)
+
+
 def _me_cached(force: bool = False):
     """Dados da conta (/users/me) com cache — evita 1 chamada por página."""
     cached = _cache_ler("me", force=force)
@@ -812,6 +823,7 @@ def publicar(
         resultado["ok"] = True
         resultado["item"] = res["item"]
         resultado["catalog_product"] = res["catalog_product"]
+        _invalidar_cache_itens()
         logger.info(
             "Anúncio publicado: %s (%s)",
             res["item"].get("id"),
@@ -829,16 +841,30 @@ def publicar(
 # Anúncios (histórico)
 # ---------------------------------------------------------------------------
 @app.get("/anuncios")
-def anuncios(request: Request, q: str = "", status: str = "", pagina: int = 1):
+def anuncios(
+    request: Request,
+    q: str = "",
+    status: str = "",
+    pagina: int = 1,
+    atualizar: int = 0,
+):
     redirect, _ = _require_ready(request)
     if redirect:
         return redirect
     ctx = _base_context(request)
     items = []
+    cache_em = None
+    force = bool(atualizar)
     try:
-        me = meli.get_me()
-        ids = meli.list_all_item_ids(me["id"])
-        items = meli.get_items_details(ids)
+        me, _ = _me_cached(force=force)
+        chave = f"anuncios:{me['id']}"
+        cached = _cache_ler(chave, force=force)
+        if cached:
+            items, cache_em = cached
+        else:
+            ids = meli.list_all_item_ids(me["id"])
+            items = meli.get_items_details(ids)
+            cache_em = _cache_gravar(chave, items)
     except Exception as exc:  # noqa: BLE001
         ctx["error"] = f"Não foi possível carregar os anúncios: {exc}"
 
@@ -860,6 +886,7 @@ def anuncios(request: Request, q: str = "", status: str = "", pagina: int = 1):
         "pagina": pagina,
         "total_paginas": total_paginas,
         "total_itens": total,
+        "cache_em": cache_em,
     })
     return templates.TemplateResponse(request, "anuncios.html", ctx)
 
@@ -874,6 +901,7 @@ def anuncio_status(request: Request, item_id: str, status: str = Form(...)):
         return _redirect("/anuncios")
     try:
         meli.update_item_status(item_id, status)
+        _invalidar_cache_itens()
         rotulos = {"active": "reativado", "paused": "pausado", "closed": "encerrado"}
         request.session["flash"] = f"Anúncio {item_id} {rotulos[status]}."
         logger.info("Anúncio %s alterado para %s", item_id, status)
@@ -891,6 +919,7 @@ def duplicar_anuncio(request: Request, item_id: str):
     try:
         novo = meli.duplicate_item(item_id)
         novo_id = novo.get("id", "?")
+        _invalidar_cache_itens()
         if novo_id and novo_id != "?":
             try:
                 meli.update_item_status(novo_id, "paused")
@@ -929,6 +958,8 @@ def anuncios_massa(
         except Exception:  # noqa: BLE001
             logger.exception("Falha na edição em massa do item %s", iid)
             erros += 1
+    if atualizados:
+        _invalidar_cache_itens()
     msg = f"{atualizados} anúncio(s) atualizado(s)."
     if erros:
         msg += f" {erros} falharam."
@@ -1013,6 +1044,7 @@ async def editar_anuncio(
         request.session["flash"] = "Atualizado com avisos — " + " · ".join(avisos)
     else:
         request.session["flash"] = f"Anúncio {item_id} atualizado."
+    _invalidar_cache_itens()
     logger.info("Anúncio %s atualizado (campos + fotos).", item_id)
     return _redirect("/anuncios")
 
@@ -1550,17 +1582,30 @@ def historico(request: Request):
 # Promoções e descontos
 # ---------------------------------------------------------------------------
 @app.get("/promocoes")
-def promocoes(request: Request):
+def promocoes(request: Request, atualizar: int = 0):
     redirect, _ = _require_ready(request)
     if redirect:
         return redirect
     ctx = _base_context(request)
-    ctx.update({"campanhas": [], "items": []})
+    ctx.update({"campanhas": [], "items": [], "cache_em": None})
+    force = bool(atualizar)
     try:
-        me = meli.get_me()
-        ctx["campanhas"] = meli.get_seller_promotions(me["id"])
-        ids = meli.list_all_item_ids(me["id"])
-        ctx["items"] = meli.get_items_details(ids)
+        me, _ = _me_cached(force=force)
+        chave = f"promocoes:{me['id']}"
+        cached = _cache_ler(chave, force=force)
+        if cached:
+            dados, ctx["cache_em"] = cached
+            ctx["campanhas"] = dados.get("campanhas", [])
+            ctx["items"] = dados.get("items", [])
+        else:
+            campanhas = meli.get_seller_promotions(me["id"])
+            ids = meli.list_all_item_ids(me["id"])
+            items = meli.get_items_details(ids)
+            ctx["campanhas"] = campanhas
+            ctx["items"] = items
+            ctx["cache_em"] = _cache_gravar(
+                chave, {"campanhas": campanhas, "items": items}
+            )
     except Exception as exc:  # noqa: BLE001
         ctx["error"] = f"Não foi possível carregar as promoções: {exc}"
     return templates.TemplateResponse(request, "promocoes.html", ctx)
@@ -1594,6 +1639,7 @@ def promocoes_aplicar(
         return redirect
     try:
         meli.apply_item_promotion(item_id, promotion_id, promotion_type, deal_price)
+        _invalidar_cache_itens()
         request.session["flash"] = f"Promoção aplicada ao anúncio {item_id}."
         logger.info("Promoção %s aplicada em %s", promotion_id, item_id)
     except Exception as exc:  # noqa: BLE001
@@ -1614,6 +1660,7 @@ def promocoes_remover(
         return redirect
     try:
         meli.remove_item_promotion(item_id, promotion_id, promotion_type)
+        _invalidar_cache_itens()
         request.session["flash"] = f"Promoção removida do anúncio {item_id}."
     except Exception as exc:  # noqa: BLE001
         logger.exception("Falha ao remover promoção")

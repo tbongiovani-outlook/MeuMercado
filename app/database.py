@@ -335,3 +335,9 @@ def cache_set(chave: str, valor: str) -> int:
             (chave, valor, agora),
         )
     return agora
+
+
+def cache_delete(chave: str) -> None:
+    """Remove um item de cache (usado ao invalidar após alterações)."""
+    with get_conn() as conn:
+        conn.execute("DELETE FROM cache WHERE chave = ?", (chave,))

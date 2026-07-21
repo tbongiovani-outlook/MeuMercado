@@ -15,6 +15,13 @@
 {% if flash %}<div class="alert alert--ok" role="status">{{ flash }}</div>{% endif %}
 {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
 
+{% if cache_em %}
+<p class="cache-info">
+    <span class="muted">Dados de {{ cache_em | datetimebr }}</span>
+    <a class="btn btn--ghost btn--sm" href="/promocoes?atualizar=1">Atualizar agora</a>
+</p>
+{% endif %}
+
 <section class="card">
     <h2>Campanhas disponíveis <span class="badge">{{ campanhas|length }}</span></h2>
     {% if campanhas %}
