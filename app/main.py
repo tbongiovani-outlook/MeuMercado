@@ -9,6 +9,7 @@ Fluxo de uso (fácil para o usuário final, roda em Windows e macOS):
 
 import secrets
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta, timezone
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import RedirectResponse
@@ -48,6 +49,92 @@ def _redirect(path: str) -> RedirectResponse:
     return RedirectResponse(path, status_code=303)
 
 
+def _order_dt(order: dict) -> datetime | None:
+    ds = order.get("date_created")
+    if not ds:
+        return None
+    try:
+        return datetime.fromisoformat(ds)
+    except ValueError:
+        return None
+
+
+def _dashboard_metrics(ml_user: dict) -> dict:
+    """Calcula os KPIs do painel principal a partir da API do Mercado Livre."""
+    kpis = {
+        "anuncios_ativos": 0, "anuncios_total": 0, "sem_estoque": 0,
+        "vendas_30d": 0, "faturamento_30d": 0.0, "comissoes_30d": 0.0,
+        "liquido_30d": 0.0, "ticket_medio": 0.0,
+        "perguntas_pendentes": 0, "reclamacoes_abertas": 0,
+        "reputacao": (ml_user.get("seller_reputation") or {}).get("level_id"),
+    }
+    acoes: list[dict] = []
+    avisos: list[str] = []
+    orders: list[dict] = []
+    uid = ml_user["id"]
+
+    try:
+        detalhes = meli.get_items_details(meli.list_item_ids(uid, limit=50))
+        kpis["anuncios_total"] = len(detalhes)
+        kpis["anuncios_ativos"] = sum(1 for d in detalhes if d.get("status") == "active")
+        kpis["sem_estoque"] = sum(
+            1 for d in detalhes
+            if d.get("status") == "active" and (d.get("available_quantity") or 0) == 0
+        )
+    except Exception as exc:  # noqa: BLE001
+        avisos.append(
+            "Não foi possível ler os anúncios — habilite a permissão "
+            "\"Publicação e sincronização\" e reconecte. "
+            f"(detalhe: {exc})"
+        )
+
+    try:
+        orders = meli.search_orders(uid, limit=50)
+        limite = datetime.now(timezone.utc) - timedelta(days=30)
+        recentes = [o for o in orders if (_order_dt(o) or limite) >= limite]
+        faturamento = sum(float(o.get("total_amount") or 0) for o in recentes)
+        comissoes = sum(
+            float(i.get("sale_fee") or 0)
+            for o in recentes for i in o.get("order_items", [])
+        )
+        kpis["vendas_30d"] = len(recentes)
+        kpis["faturamento_30d"] = round(faturamento, 2)
+        kpis["comissoes_30d"] = round(comissoes, 2)
+        kpis["liquido_30d"] = round(faturamento - comissoes, 2)
+        kpis["ticket_medio"] = round(faturamento / len(recentes), 2) if recentes else 0.0
+    except Exception as exc:  # noqa: BLE001
+        avisos.append(
+            "Não foi possível ler as vendas — verifique a permissão de "
+            f"pedidos e reconecte. (detalhe: {exc})"
+        )
+
+    try:
+        q = meli.search_questions(uid)
+        kpis["perguntas_pendentes"] = q.get("total") or len(q.get("questions", []))
+    except Exception:  # noqa: BLE001
+        pass
+
+    try:
+        c = meli.search_claims()
+        kpis["reclamacoes_abertas"] = (c.get("paging") or {}).get("total") or len(
+            c.get("data", c.get("results", []))
+        )
+    except Exception:  # noqa: BLE001
+        pass
+
+    if kpis["perguntas_pendentes"]:
+        acoes.append({"tipo": "warn", "link": "/pos-venda",
+                      "texto": f"{kpis['perguntas_pendentes']} pergunta(s) sem resposta"})
+    if kpis["reclamacoes_abertas"]:
+        acoes.append({"tipo": "error", "link": "/pos-venda",
+                      "texto": f"{kpis['reclamacoes_abertas']} reclamação(ões) aberta(s)"})
+    if kpis["sem_estoque"]:
+        acoes.append({"tipo": "warn", "link": "/anuncios",
+                      "texto": f"{kpis['sem_estoque']} anúncio(s) ativo(s) sem estoque"})
+
+    return {"kpis": kpis, "acoes": acoes, "avisos": avisos, "orders": orders[:10]}
+
+
 # ---------------------------------------------------------------------------
 # Painel principal
 # ---------------------------------------------------------------------------
@@ -64,8 +151,9 @@ def home(request: Request):
         "configured": meli.is_configured(),
         "connected": bool(database.get_token()),
         "ml_user": None,
-        "items": [],
         "orders": [],
+        "kpis": None,
+        "acoes": [],
         "error": request.session.pop("flash", None),
     }
 
@@ -75,35 +163,13 @@ def home(request: Request):
         except Exception as exc:  # noqa: BLE001
             context["error"] = f"Não foi possível ler os dados da conta: {exc}"
 
-        ml_user = context["ml_user"]
-        avisos = []
-        if ml_user:
-            try:
-                items = meli.api_get(
-                    f"/users/{ml_user['id']}/items/search", {"limit": 20}
-                )
-                context["items"] = items.get("results", [])
-            except Exception as exc:  # noqa: BLE001
-                avisos.append(
-                    "Não foi possível ler os anúncios — habilite a permissão "
-                    "\"Publicação e sincronização\" no seu app do Mercado Livre "
-                    "e reconecte. "
-                    f"(detalhe: {exc})"
-                )
-            try:
-                orders = meli.api_get(
-                    "/orders/search", {"seller": ml_user["id"], "sort": "date_desc"}
-                )
-                context["orders"] = orders.get("results", [])
-            except Exception as exc:  # noqa: BLE001
-                avisos.append(
-                    "Não foi possível ler as vendas — verifique a permissão de "
-                    "vendas/pedidos no seu app do Mercado Livre e reconecte. "
-                    f"(detalhe: {exc})"
-                )
-
-        if avisos and not context["error"]:
-            context["error"] = " · ".join(avisos)
+        if context["ml_user"]:
+            dados = _dashboard_metrics(context["ml_user"])
+            context["kpis"] = dados["kpis"]
+            context["acoes"] = dados["acoes"]
+            context["orders"] = dados["orders"]
+            if dados["avisos"] and not context["error"]:
+                context["error"] = " · ".join(dados["avisos"])
 
     return templates.TemplateResponse(request, "dashboard.html", context)
 

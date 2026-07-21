@@ -206,6 +206,34 @@ h2 { margin-top: 0; font-size: 1.05rem; }
 .table tr.is-me { background: #eef3ff; }
 .table tr.is-me td { font-weight: 600; }
 
+/* KPIs do painel */
+.section-title { margin: 0.5rem 0 0.75rem; }
+.kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+.kpi {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.1rem;
+    box-shadow: var(--shadow-2);
+    text-decoration: none;
+    color: var(--text);
+}
+a.kpi:hover { box-shadow: 0 2px 4px rgba(16,24,40,.1), 0 6px 16px rgba(16,24,40,.1); }
+.kpi__label { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+.kpi__value { font-size: 1.7rem; font-weight: 800; color: var(--primary-ink); line-height: 1.1; }
+.kpi__value--sm { font-size: 1.1rem; }
+.kpi__hint { font-size: 0.78rem; color: var(--muted); }
+.kpi--warn { border-left: 4px solid #f59e0b; }
+.kpi--error { border-left: 4px solid var(--error); }
+
 .alert {
     padding: 0.75rem 1rem;
     border-radius: 8px;

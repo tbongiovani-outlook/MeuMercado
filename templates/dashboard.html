@@ -42,42 +42,88 @@
 </section>
 {% endif %}
 
-<div class="grid">
-    <section class="card">
-        <h2>Anúncios <span class="badge">{{ items|length }}</span></h2>
-        {% if items %}
-        <ul class="list">
-            {% for item_id in items %}
-            <li><code>{{ item_id }}</code></li>
-            {% endfor %}
-        </ul>
-        {% else %}
-        <p class="muted">Nenhum anúncio encontrado.</p>
-        {% endif %}
-    </section>
+{% if kpis %}
+{% if acoes %}
+<section class="card" aria-labelledby="acoes-titulo">
+    <h2 id="acoes-titulo">Precisa de atenção</h2>
+    <ul class="list" role="list">
+        {% for a in acoes %}
+        <li>
+            <span class="tag tag--{{ 'alta' if a.tipo == 'error' else 'media' }}">!</span>
+            <a href="{{ a.link }}">{{ a.texto }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+</section>
+{% endif %}
 
-    <section class="card">
-        <h2>Vendas recentes <span class="badge">{{ orders|length }}</span></h2>
-        {% if orders %}
-        <table class="table">
-            <thead>
-                <tr><th>Pedido</th><th>Status</th><th>Total</th></tr>
-            </thead>
-            <tbody>
-                {% for order in orders %}
-                <tr>
-                    <td><code>{{ order.id }}</code></td>
-                    <td>{{ order.status }}</td>
-                    <td>{{ order.currency_id }} {{ order.total_amount }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p class="muted">Nenhuma venda encontrada.</p>
-        {% endif %}
-    </section>
+<h2 class="section-title">Resumo (últimos 30 dias)</h2>
+<div class="kpis">
+    <a class="kpi" href="/anuncios">
+        <span class="kpi__label">Anúncios ativos</span>
+        <span class="kpi__value">{{ kpis.anuncios_ativos }}</span>
+        <span class="kpi__hint">de {{ kpis.anuncios_total }} no total</span>
+    </a>
+    <a class="kpi" href="/vendas">
+        <span class="kpi__label">Vendas (30d)</span>
+        <span class="kpi__value">{{ kpis.vendas_30d }}</span>
+        <span class="kpi__hint">pedidos</span>
+    </a>
+    <a class="kpi" href="/lucratividade">
+        <span class="kpi__label">Faturamento (30d)</span>
+        <span class="kpi__value">R$ {{ '%.2f'|format(kpis.faturamento_30d) }}</span>
+        <span class="kpi__hint">líquido R$ {{ '%.2f'|format(kpis.liquido_30d) }}</span>
+    </a>
+    <a class="kpi" href="/lucratividade">
+        <span class="kpi__label">Ticket médio</span>
+        <span class="kpi__value">R$ {{ '%.2f'|format(kpis.ticket_medio) }}</span>
+        <span class="kpi__hint">comissões R$ {{ '%.2f'|format(kpis.comissoes_30d) }}</span>
+    </a>
+    <a class="kpi {% if kpis.perguntas_pendentes %}kpi--warn{% endif %}" href="/pos-venda">
+        <span class="kpi__label">Perguntas pendentes</span>
+        <span class="kpi__value">{{ kpis.perguntas_pendentes }}</span>
+        <span class="kpi__hint">responder rápido ajuda a vender</span>
+    </a>
+    <a class="kpi {% if kpis.reclamacoes_abertas %}kpi--error{% endif %}" href="/pos-venda">
+        <span class="kpi__label">Reclamações abertas</span>
+        <span class="kpi__value">{{ kpis.reclamacoes_abertas }}</span>
+        <span class="kpi__hint">impacta a reputação</span>
+    </a>
+    <div class="kpi">
+        <span class="kpi__label">Reputação</span>
+        <span class="kpi__value kpi__value--sm">{{ kpis.reputacao or '—' }}</span>
+        <span class="kpi__hint">nível do vendedor</span>
+    </div>
+    <a class="kpi {% if kpis.sem_estoque %}kpi--warn{% endif %}" href="/anuncios">
+        <span class="kpi__label">Sem estoque</span>
+        <span class="kpi__value">{{ kpis.sem_estoque }}</span>
+        <span class="kpi__hint">anúncios ativos zerados</span>
+    </a>
 </div>
+{% endif %}
+
+<section class="card">
+    <h2>Vendas recentes <span class="badge">{{ orders|length }}</span></h2>
+    {% if orders %}
+    <table class="table">
+        <thead>
+            <tr><th>Pedido</th><th>Data</th><th>Status</th><th>Total</th></tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td><code>{{ order.id }}</code></td>
+                <td>{{ (order.date_created or '')[:10] }}</td>
+                <td><span class="badge">{{ order.status }}</span></td>
+                <td>{{ order.currency_id }} {{ order.total_amount }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted">Nenhuma venda encontrada.</p>
+    {% endif %}
+</section>
 {% endif %}
 {% endblock %}
 
