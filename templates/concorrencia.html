@@ -11,6 +11,19 @@
 
 {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
 
+{% if recomendacao %}
+<section class="card card--reco">
+    <h2>💡 Preço recomendado: R$ {{ '%.2f'|format(recomendacao.valor) }}</h2>
+    <p class="muted">{{ recomendacao.motivo }}</p>
+    <form method="post" action="/anuncios/{{ item.id }}/preco"
+          onsubmit="return confirm('Aplicar o preço de R$ {{ '%.2f'|format(recomendacao.valor) }} a este anúncio?');">
+        <input type="hidden" name="price" value="{{ '%.2f'|format(recomendacao.valor) }}">
+        <button class="btn btn--primary btn--sm" type="submit">Aplicar preço recomendado</button>
+        <a class="btn btn--ghost btn--sm" href="/anuncios/{{ item.id }}/editar">Editar manualmente</a>
+    </form>
+</section>
+{% endif %}
+
 {% if resumo %}
 <div class="grid">
     <section class="card card--center">

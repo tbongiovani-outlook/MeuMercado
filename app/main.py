@@ -754,7 +754,8 @@ def concorrencia_anuncio(request: Request, item_id: str):
     if redirect:
         return redirect
     ctx = _base_context(request)
-    ctx.update({"competidores": [], "resumo": None, "sugestao": None, "preco": 0})
+    ctx.update({"competidores": [], "resumo": None, "sugestao": None, "preco": 0,
+                "recomendacao": None})
     try:
         item = meli.get_item(item_id)
         ctx["item"] = item
@@ -778,11 +779,47 @@ def concorrencia_anuncio(request: Request, item_id: str):
                     "sou_menor": preco <= menor,
                     "diferenca_menor": round(preco - menor, 2),
                 }
+                if preco > menor:
+                    ctx["recomendacao"] = {
+                        "valor": round(menor, 2),
+                        "motivo": f"Igualar o menor concorrente (R$ {menor:.2f}) para ganhar a compra.",
+                    }
         else:
-            ctx["sugestao"] = meli.get_price_suggestion(item_id) or None
+            sugestao = meli.get_price_suggestion(item_id) or None
+            ctx["sugestao"] = sugestao
+            ctx["recomendacao"] = _recomendacao_da_sugestao(sugestao, preco)
     except Exception as exc:  # noqa: BLE001
         ctx["error"] = f"Não foi possível carregar a concorrência: {exc}"
     return templates.TemplateResponse(request, "concorrencia.html", ctx)
+
+
+def _recomendacao_da_sugestao(sugestao: dict | None, preco: float) -> dict | None:
+    """Extrai um preço recomendado da sugestão do Mercado Livre, se houver."""
+    if not sugestao:
+        return None
+    sp = sugestao.get("suggested_price") or {}
+    valor = sp.get("amount") if isinstance(sp, dict) else sp
+    if not valor:
+        return None
+    valor = round(float(valor), 2)
+    if abs(valor - preco) < 0.01:
+        return None
+    return {"valor": valor, "motivo": "Preço sugerido pelo Mercado Livre para este produto."}
+
+
+@app.post("/anuncios/{item_id}/preco")
+def aplicar_preco(request: Request, item_id: str, price: float = Form(...)):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    try:
+        meli.update_item(item_id, {"price": round(price, 2)})
+        request.session["flash"] = f"Preço do anúncio {item_id} atualizado para R$ {price:.2f}."
+        logger.info("Preço do anúncio %s atualizado para %.2f", item_id, price)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Falha ao aplicar preço recomendado")
+        request.session["flash"] = f"Não foi possível atualizar o preço: {exc}"
+    return _redirect(f"/anuncios/{item_id}/concorrencia")
 
 
 # ---------------------------------------------------------------------------

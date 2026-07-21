@@ -306,6 +306,10 @@ h2 { margin-top: 0; font-size: 1.05rem; }
     color: #fff;
     margin-left: 0.35rem;
 }
+.card--reco {
+    border-left: 4px solid var(--accent);
+    background: #f6f7fc;
+}
 .reply__tpl {
     padding: 0.4rem 0.6rem;
     border: 1px solid var(--border);
