@@ -59,13 +59,84 @@ def _order_dt(order: dict) -> datetime | None:
         return None
 
 
+def _trend(atual: float, anterior: float) -> dict:
+    """Compara o valor atual com o do período anterior."""
+    if anterior <= 0:
+        return {"dir": "up" if atual > 0 else "flat", "pct": None}
+    pct = round((atual - anterior) / anterior * 100)
+    return {"dir": "up" if pct > 0 else "down" if pct < 0 else "flat", "pct": pct}
+
+
+def _count_acima_concorrencia(detalhes: list[dict], limite: int = 12) -> int:
+    """Conta anúncios ativos de catálogo com preço acima do menor concorrente."""
+    acima = verificados = 0
+    for d in detalhes:
+        if verificados >= limite:
+            break
+        if d.get("status") != "active" or not d.get("catalog_product_id"):
+            continue
+        preco = d.get("price")
+        if preco is None:
+            continue
+        try:
+            comps = meli.get_catalog_competitors(d["catalog_product_id"])
+        except Exception:  # noqa: BLE001
+            continue
+        verificados += 1
+        precos = [
+            float(c["price"]) for c in comps
+            if c.get("price") and c.get("id") != d.get("id")
+        ]
+        if precos and float(preco) > min(precos):
+            acima += 1
+    return acima
+
+
+def _orders_metrics(orders: list[dict], agora: datetime) -> dict:
+    """Métricas de vendas dos últimos 30 dias + tendência e série diária."""
+    ini_atual = agora - timedelta(days=30)
+    ini_anterior = agora - timedelta(days=60)
+    atuais: list[dict] = []
+    anteriores: list[dict] = []
+    por_dia = [0] * 30
+    for o in orders:
+        dt = _order_dt(o)
+        if not dt:
+            continue
+        if dt >= ini_atual:
+            atuais.append(o)
+            idx = (agora - dt).days
+            if 0 <= idx < 30:
+                por_dia[29 - idx] += 1
+        elif dt >= ini_anterior:
+            anteriores.append(o)
+
+    fat = sum(float(o.get("total_amount") or 0) for o in atuais)
+    com = sum(
+        float(i.get("sale_fee") or 0)
+        for o in atuais for i in o.get("order_items", [])
+    )
+    fat_ant = sum(float(o.get("total_amount") or 0) for o in anteriores)
+    return {
+        "vendas_30d": len(atuais),
+        "faturamento_30d": round(fat, 2),
+        "comissoes_30d": round(com, 2),
+        "liquido_30d": round(fat - com, 2),
+        "ticket_medio": round(fat / len(atuais), 2) if atuais else 0.0,
+        "trend_vendas": _trend(len(atuais), len(anteriores)),
+        "trend_faturamento": _trend(fat, fat_ant),
+        "vendas_por_dia": por_dia,
+    }
+
+
 def _dashboard_metrics(ml_user: dict) -> dict:
     """Calcula os KPIs do painel principal a partir da API do Mercado Livre."""
     kpis = {
         "anuncios_ativos": 0, "anuncios_total": 0, "sem_estoque": 0,
         "vendas_30d": 0, "faturamento_30d": 0.0, "comissoes_30d": 0.0,
-        "liquido_30d": 0.0, "ticket_medio": 0.0,
+        "liquido_30d": 0.0, "ticket_medio": 0.0, "acima_concorrencia": 0,
         "perguntas_pendentes": 0, "reclamacoes_abertas": 0,
+        "trend_vendas": None, "trend_faturamento": None, "vendas_por_dia": [],
         "reputacao": (ml_user.get("seller_reputation") or {}).get("level_id"),
     }
     acoes: list[dict] = []
@@ -81,6 +152,7 @@ def _dashboard_metrics(ml_user: dict) -> dict:
             1 for d in detalhes
             if d.get("status") == "active" and (d.get("available_quantity") or 0) == 0
         )
+        kpis["acima_concorrencia"] = _count_acima_concorrencia(detalhes)
     except Exception as exc:  # noqa: BLE001
         avisos.append(
             "Não foi possível ler os anúncios — habilite a permissão "
@@ -88,20 +160,11 @@ def _dashboard_metrics(ml_user: dict) -> dict:
             f"(detalhe: {exc})"
         )
 
+    agora = datetime.now(timezone.utc)
     try:
-        orders = meli.search_orders(uid, limit=50)
-        limite = datetime.now(timezone.utc) - timedelta(days=30)
-        recentes = [o for o in orders if (_order_dt(o) or limite) >= limite]
-        faturamento = sum(float(o.get("total_amount") or 0) for o in recentes)
-        comissoes = sum(
-            float(i.get("sale_fee") or 0)
-            for o in recentes for i in o.get("order_items", [])
-        )
-        kpis["vendas_30d"] = len(recentes)
-        kpis["faturamento_30d"] = round(faturamento, 2)
-        kpis["comissoes_30d"] = round(comissoes, 2)
-        kpis["liquido_30d"] = round(faturamento - comissoes, 2)
-        kpis["ticket_medio"] = round(faturamento / len(recentes), 2) if recentes else 0.0
+        date_from = (agora - timedelta(days=60)).strftime("%Y-%m-%dT%H:%M:%S.000-00:00")
+        orders = meli.search_orders(uid, limit=50, date_from=date_from)
+        kpis.update(_orders_metrics(orders, agora))
     except Exception as exc:  # noqa: BLE001
         avisos.append(
             "Não foi possível ler as vendas — verifique a permissão de "
@@ -131,6 +194,9 @@ def _dashboard_metrics(ml_user: dict) -> dict:
     if kpis["sem_estoque"]:
         acoes.append({"tipo": "warn", "link": "/anuncios",
                       "texto": f"{kpis['sem_estoque']} anúncio(s) ativo(s) sem estoque"})
+    if kpis["acima_concorrencia"]:
+        acoes.append({"tipo": "warn", "link": "/anuncios",
+                      "texto": f"{kpis['acima_concorrencia']} anúncio(s) com preço acima da concorrência"})
 
     return {"kpis": kpis, "acoes": acoes, "avisos": avisos, "orders": orders[:10]}
 

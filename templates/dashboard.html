@@ -66,12 +66,20 @@
     </a>
     <a class="kpi" href="/vendas">
         <span class="kpi__label">Vendas (30d)</span>
-        <span class="kpi__value">{{ kpis.vendas_30d }}</span>
-        <span class="kpi__hint">pedidos</span>
+        <span class="kpi__value">{{ kpis.vendas_30d }}
+            {% if kpis.trend_vendas and kpis.trend_vendas.pct is not none %}
+            <span class="trend trend--{{ kpis.trend_vendas.dir }}">{{ '▲' if kpis.trend_vendas.dir == 'up' else '▼' if kpis.trend_vendas.dir == 'down' else '▬' }} {{ kpis.trend_vendas.pct }}%</span>
+            {% endif %}
+        </span>
+        <span class="kpi__hint">vs. 30 dias anteriores</span>
     </a>
     <a class="kpi" href="/lucratividade">
         <span class="kpi__label">Faturamento (30d)</span>
-        <span class="kpi__value">R$ {{ '%.2f'|format(kpis.faturamento_30d) }}</span>
+        <span class="kpi__value">R$ {{ '%.2f'|format(kpis.faturamento_30d) }}
+            {% if kpis.trend_faturamento and kpis.trend_faturamento.pct is not none %}
+            <span class="trend trend--{{ kpis.trend_faturamento.dir }}">{{ '▲' if kpis.trend_faturamento.dir == 'up' else '▼' if kpis.trend_faturamento.dir == 'down' else '▬' }} {{ kpis.trend_faturamento.pct }}%</span>
+            {% endif %}
+        </span>
         <span class="kpi__hint">líquido R$ {{ '%.2f'|format(kpis.liquido_30d) }}</span>
     </a>
     <a class="kpi" href="/lucratividade">
@@ -99,7 +107,25 @@
         <span class="kpi__value">{{ kpis.sem_estoque }}</span>
         <span class="kpi__hint">anúncios ativos zerados</span>
     </a>
+    <a class="kpi {% if kpis.acima_concorrencia %}kpi--warn{% endif %}" href="/anuncios">
+        <span class="kpi__label">Preço acima da concorrência</span>
+        <span class="kpi__value">{{ kpis.acima_concorrencia }}</span>
+        <span class="kpi__hint">anúncios de catálogo</span>
+    </a>
 </div>
+
+{% if kpis.vendas_por_dia and kpis.vendas_por_dia|sum > 0 %}
+<section class="card">
+    <h2>Vendas por dia (30 dias)</h2>
+    {% set maxv = kpis.vendas_por_dia|max %}
+    <div class="spark" role="img" aria-label="Gráfico de vendas por dia nos últimos 30 dias">
+        {% for v in kpis.vendas_por_dia %}
+        <span class="spark__bar" style="height: {{ (4 + (v / maxv * 56)) if maxv else 4 }}px"
+              title="{{ v }} venda(s)"></span>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
 {% endif %}
 
 <section class="card">

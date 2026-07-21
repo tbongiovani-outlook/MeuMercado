@@ -234,6 +234,27 @@ a.kpi:hover { box-shadow: 0 2px 4px rgba(16,24,40,.1), 0 6px 16px rgba(16,24,40,
 .kpi--warn { border-left: 4px solid #f59e0b; }
 .kpi--error { border-left: 4px solid var(--error); }
 
+.trend { font-size: 0.8rem; font-weight: 700; vertical-align: middle; }
+.trend--up { color: #047857; }
+.trend--down { color: var(--error); }
+.trend--flat { color: var(--muted); }
+
+/* Mini-gráfico (sparkline) de vendas por dia */
+.spark {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 64px;
+    margin-top: 0.5rem;
+}
+.spark__bar {
+    flex: 1;
+    min-width: 3px;
+    background: var(--accent);
+    border-radius: 2px 2px 0 0;
+    opacity: 0.85;
+}
+
 .alert {
     padding: 0.75rem 1rem;
     border-radius: 8px;

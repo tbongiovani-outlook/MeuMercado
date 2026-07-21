@@ -402,16 +402,19 @@ def get_items_details(item_ids: list[str]) -> list[dict]:
     if not item_ids:
         return []
     ids = ",".join(item_ids[:20])
-    attrs = "id,title,price,available_quantity,sold_quantity,status,permalink,thumbnail"
+    attrs = (
+        "id,title,price,available_quantity,sold_quantity,status,"
+        "permalink,thumbnail,catalog_product_id"
+    )
     data = api_get("/items", {"ids": ids, "attributes": attrs})
     return [row.get("body", {}) for row in data if row.get("code") == 200]
 
 
-def search_orders(seller_id: int, limit: int = 30) -> list[dict]:
-    data = api_get(
-        "/orders/search",
-        {"seller": seller_id, "sort": "date_desc", "limit": limit},
-    )
+def search_orders(seller_id: int, limit: int = 30, date_from: str = "") -> list[dict]:
+    params = {"seller": seller_id, "sort": "date_desc", "limit": limit}
+    if date_from:
+        params["order.date_created.from"] = date_from
+    data = api_get("/orders/search", params)
     return data.get("results", [])
 
 
