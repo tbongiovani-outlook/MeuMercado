@@ -321,6 +321,7 @@ curl -X POST \
 - [x] Painel de qualidade/posicionamento do anúncio (índice + checklist)
 - [x] Melhorias de usabilidade (agrupamento de campos, dicas, feedback, responsividade)
 - [x] Análise de concorrência de preço (catálogo) + taxa de conversão por anúncio
+- [x] Acessibilidade WCAG 2.2 AA e Fluent Design (foco, skip link, alt, aria, contraste, elevação)
 
 ---
 
