@@ -2,7 +2,7 @@
 
 Sistema web para **gerenciar anúncios, vendas, entregas, mensagens e reclamações do Mercado Livre** em um único lugar. A aplicação roda **localmente** em uma máquina Windows ou macOS e se conecta à conta do vendedor no Mercado Livre por meio da **API oficial** (integração OAuth 2.0).
 
-> Status: 🚧 Em construção — este é o documento inicial do projeto. O código ainda não foi implementado.
+> Status: ✅ **Funcional** — app implementado (FastAPI + SQLite) com instalador de 1 clique para Windows. Em evolução contínua.
 
 ---
 
@@ -26,7 +26,7 @@ iex ((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.co
 
 Um usuário que vende no Mercado Livre autentica-se em **Meu Mercado**, que por sua vez se autentica no Mercado Livre em nome dele. A partir daí, o usuário consegue publicar e acompanhar seus anúncios sem precisar entrar no painel do Mercado Livre.
 
-## ✨ Funcionalidades planejadas
+## ✨ Funcionalidades
 
 | Funcionalidade | O que o usuário ganha | Recurso da API |
 | --- | --- | --- |
@@ -37,6 +37,8 @@ Um usuário que vende no Mercado Livre autentica-se em **Meu Mercado**, que por 
 | **Entregas** | Status de envio e rastreamento | `GET /shipments/{id}` |
 | **Mensagens** | Perguntas de clientes e mensagens pós-venda | `GET /questions/search`, `GET /messages/...` |
 | **Reclamações** | Acompanhar e responder reclamações e devoluções | `GET /post-purchase/v1/claims/search` |
+
+> Estas são a base. O app já vai além: pós-venda unificado, lucratividade real, tendências, promoções, respostas rápidas, edição em massa, agendamento de ações e mais — veja a lista completa em **[Próximos passos](#-próximos-passos)**.
 
 ---
 
@@ -310,6 +312,8 @@ curl -X POST \
 - **Nunca** versione `client_secret`, `access_token` ou `refresh_token`. Use um arquivo `.env` (ignorado pelo Git).
 - Armazene tokens de forma protegida no banco local e renove-os apenas quando expirarem.
 - Valide sempre o parâmetro `state` no callback OAuth.
+- **Proteção CSRF**: cookie de sessão `SameSite=Lax` + verificação de `Origin`/`Referer` nas requisições que alteram estado.
+- Senha da conta local protegida por **hash de mão única (PBKDF2)** — nunca em texto puro.
 - Respeite os limites de requisição (rate limit) para evitar bloqueios temporários (erro 429).
 
 ---
@@ -345,7 +349,7 @@ curl -X POST \
 - [x] Duplicar anúncio (cópia criada já pausada para revisão)
 - [x] Edição em massa de preço e estoque (definir, aumentar/reduzir %)
 
-### 🚧 Próximas melhorias (em execução)
+### 🚧 Melhorias entregues
 
 - [x] Busca e filtro na lista de anúncios (por título e status)
 - [x] Duplicar anúncio abrindo direto na tela de edição
@@ -364,6 +368,22 @@ curl -X POST \
 - [x] Cache local configurável (painel e tendências) com “Atualizar agora”
 - [x] Cache dos dados da conta (`/users/me`) para acelerar as telas
 - [x] Carregamento paralelo das métricas do painel (~5,6s → ~2,0s)
+- [x] Edição do anúncio: título, descrição e adicionar foto
+- [x] Busca/filtro nas telas de Vendas e Pós-venda
+- [x] Contadores (badges) de perguntas e vendas no menu
+- [x] **Proteção CSRF** (SameSite=Lax + verificação de Origin/Referer)
+- [x] Páginas de erro **404/500** com a identidade visual
+- [x] Cache das telas de **Anúncios** e **Promoções** (com invalidação automática ao alterar itens)
+
+### 💡 Ideias para o futuro (backlog)
+
+- [ ] Caixa de entrada unificada (perguntas, reclamações, vendas a enviar, estoque baixo)
+- [ ] Atalhos de teclado para navegação e ações rápidas
+- [ ] Testes automatizados (pytest)
+- [ ] Modo escuro (tema claro/escuro)
+- [ ] Tratamento de rate limit (429) com retentativa/backoff
+- [ ] Aplicativo instalável (PWA) e notificações desktop
+- [ ] Sugestão de resposta com IA e multi-conta do Mercado Livre
 
 ---
 
