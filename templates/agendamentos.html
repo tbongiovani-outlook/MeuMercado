@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Agendamentos · Meu Mercado{% endblock %}
+{% block nav %}{% include "_nav.html" %}{% endblock %}
+
+{% block content %}
+<h1>Agendamento de ações</h1>
+<p class="muted">Programe pausar, reativar, encerrar ou alterar o preço de um anúncio
+    para um horário futuro. As ações rodam automaticamente em segundo plano.</p>
+
+{% if flash %}<div class="alert alert--ok" role="status">{{ flash }}</div>{% endif %}
+{% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
+
+<section class="card">
+    <h2>Nova ação agendada</h2>
+    <form class="bulkbar" method="post" action="/agendamentos">
+        <label class="field field--inline">
+            <span>Anúncio</span>
+            <select name="item_id" required>
+                {% for it in items %}
+                <option value="{{ it.id }}">{{ it.title }} ({{ it.status }})</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label class="field field--inline">
+            <span>Ação</span>
+            <select name="tipo" id="tipo-acao">
+                <option value="pausar">Pausar</option>
+                <option value="reativar">Reativar</option>
+                <option value="encerrar">Encerrar</option>
+                <option value="preco">Alterar preço</option>
+            </select>
+        </label>
+        <label class="field field--inline">
+            <span>Preço (se aplicável)</span>
+            <input type="number" name="valor" step="0.01" min="0" placeholder="R$">
+        </label>
+        <label class="field field--inline">
+            <span>Quando</span>
+            <input type="datetime-local" name="quando" required>
+        </label>
+        <button class="btn btn--primary btn--sm" type="submit">Agendar</button>
+    </form>
+</section>
+
+<section class="card">
+    <h2>Agendamentos <span class="badge">{{ tasks|length }}</span></h2>
+    {% if tasks %}
+    <table class="table">
+        <thead>
+            <tr><th>Quando</th><th>Ação</th><th>Anúncio</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for t in tasks %}
+            <tr>
+                <td>{{ t.executar_em | datetimebr }}</td>
+                <td>{{ t.tipo }}{% if t.tipo == 'preco' and t.valor %} → R$ {{ '%.2f'|format(t.valor) }}{% endif %}</td>
+                <td>{{ t.titulo or t.item_id }}</td>
+                <td>
+                    <span class="badge">{{ t.status }}</span>
+                    {% if t.status == 'erro' and t.resultado %}<br><small class="muted">{{ t.resultado }}</small>{% endif %}
+                </td>
+                <td>
+                    {% if t.status == 'pendente' %}
+                    <form method="post" action="/agendamentos/{{ t.id }}/cancelar"
+                          onsubmit="return confirm('Cancelar este agendamento?');">
+                        <button class="btn btn--ghost btn--sm" type="submit">Cancelar</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted">Nenhum agendamento ainda.</p>
+    {% endif %}
+</section>
+{% endblock %}

@@ -10,6 +10,7 @@ Fluxo de uso (fácil para o usuário final, roda em Windows e macOS):
 import secrets
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
+import asyncio
 import csv
 import io
 import re
@@ -31,14 +32,65 @@ logger = telemetry.setup_logging()
 async def lifespan(app: FastAPI):
     database.init_db()
     logger.info("Aplicação iniciada. Banco pronto em %s", settings.database_path)
+    tarefa = asyncio.create_task(_scheduler_loop())
     yield
+    tarefa.cancel()
     logger.info("Aplicação finalizada.")
+
+
+async def _scheduler_loop():
+    """Verifica periodicamente as ações agendadas e executa as vencidas."""
+    while True:
+        try:
+            await asyncio.sleep(60)
+            await asyncio.to_thread(_run_due_tasks)
+        except asyncio.CancelledError:
+            raise
+        except Exception:  # noqa: BLE001
+            logger.exception("Falha no laço do agendador")
+
+
+def _run_due_tasks() -> None:
+    """Executa as ações agendadas cujo horário já chegou (best-effort)."""
+    import time as _time
+    for tarefa in database.due_tasks(int(_time.time())):
+        try:
+            _executar_tarefa(tarefa)
+            database.finish_task(tarefa["id"], "concluida", "ok")
+            logger.info("Ação agendada %s executada (%s em %s)",
+                        tarefa["id"], tarefa["tipo"], tarefa["item_id"])
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Falha ao executar ação agendada %s", tarefa["id"])
+            database.finish_task(tarefa["id"], "erro", str(exc)[:200])
+
+
+def _executar_tarefa(tarefa: dict) -> None:
+    tipo = tarefa["tipo"]
+    item_id = tarefa["item_id"]
+    if tipo in {"pausar", "reativar", "encerrar"}:
+        status = {"pausar": "paused", "reativar": "active", "encerrar": "closed"}[tipo]
+        meli.update_item_status(item_id, status)
+    elif tipo == "preco":
+        meli.update_item(item_id, {"price": round(tarefa["valor"] or 0, 2)})
+    else:
+        raise ValueError(f"Tipo de ação desconhecido: {tipo}")
+
 
 
 app = FastAPI(title="Meu Mercado", lifespan=lifespan)
 app.add_middleware(SessionMiddleware, secret_key=settings.app_secret_key)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+
+def _datetimebr(epoch: int | None) -> str:
+    """Formata um timestamp epoch como data/hora local (dd/mm/aaaa HH:MM)."""
+    if not epoch:
+        return "—"
+    return datetime.fromtimestamp(int(epoch)).strftime("%d/%m/%Y %H:%M")
+
+
+templates.env.filters["datetimebr"] = _datetimebr
 
 # Instrumenta a aplicação com OpenTelemetry.
 telemetry.setup_telemetry(app)
@@ -1311,6 +1363,65 @@ def promocoes_remover(
         logger.exception("Falha ao remover promoção")
         request.session["flash"] = f"Não foi possível remover a promoção: {exc}"
     return _redirect(f"/promocoes/{item_id}")
+
+
+# ---------------------------------------------------------------------------
+# Agendamento de ações
+# ---------------------------------------------------------------------------
+@app.get("/agendamentos")
+def agendamentos(request: Request):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    ctx = _base_context(request)
+    ctx.update({"tasks": database.list_tasks(), "items": []})
+    try:
+        me = meli.get_me()
+        ids = meli.list_all_item_ids(me["id"])
+        ctx["items"] = meli.get_items_details(ids)
+    except Exception as exc:  # noqa: BLE001
+        ctx["error"] = f"Não foi possível carregar os anúncios: {exc}"
+    return templates.TemplateResponse(request, "agendamentos.html", ctx)
+
+
+@app.post("/agendamentos")
+def agendamentos_criar(
+    request: Request,
+    tipo: str = Form(...),
+    item_id: str = Form(...),
+    quando: str = Form(...),
+    valor: float = Form(0),
+):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    try:
+        executar_em = int(datetime.fromisoformat(quando).timestamp())
+    except ValueError:
+        request.session["flash"] = "Data/hora inválida."
+        return _redirect("/agendamentos")
+    if executar_em <= int(datetime.now().timestamp()):
+        request.session["flash"] = "Escolha uma data/hora no futuro."
+        return _redirect("/agendamentos")
+    titulo = ""
+    try:
+        titulo = meli.get_item(item_id).get("title", "")
+    except Exception:  # noqa: BLE001
+        pass
+    database.add_task(tipo, item_id, executar_em, titulo,
+                      valor if tipo == "preco" else None)
+    request.session["flash"] = "Ação agendada com sucesso."
+    return _redirect("/agendamentos")
+
+
+@app.post("/agendamentos/{task_id}/cancelar")
+def agendamentos_cancelar(request: Request, task_id: int):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    database.cancel_task(task_id)
+    request.session["flash"] = "Agendamento cancelado."
+    return _redirect("/agendamentos")
 
 
 # ---------------------------------------------------------------------------

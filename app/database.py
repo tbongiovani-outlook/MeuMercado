@@ -81,6 +81,21 @@ def init_db() -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS scheduled_tasks (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                tipo        TEXT NOT NULL,
+                item_id     TEXT NOT NULL,
+                titulo      TEXT,
+                valor       REAL,
+                executar_em INTEGER NOT NULL,
+                status      TEXT NOT NULL DEFAULT 'pendente',
+                resultado   TEXT,
+                created_at  INTEGER NOT NULL
+            )
+            """
+        )
 
 
 def save_token(
@@ -240,3 +255,49 @@ def list_snapshots(limit: int = 60) -> list[dict]:
             "SELECT * FROM daily_snapshots ORDER BY dia DESC LIMIT ?", (limit,)
         ).fetchall()
         return [dict(r) for r in reversed(rows)]
+
+
+def add_task(tipo: str, item_id: str, executar_em: int,
+             titulo: str = "", valor: float | None = None) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            """
+            INSERT INTO scheduled_tasks
+                (tipo, item_id, titulo, valor, executar_em, status, created_at)
+            VALUES (?, ?, ?, ?, ?, 'pendente', ?)
+            """,
+            (tipo, item_id, titulo, valor, executar_em, int(time.time())),
+        )
+
+
+def list_tasks(limit: int = 100) -> list[dict]:
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM scheduled_tasks ORDER BY executar_em DESC LIMIT ?", (limit,)
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+
+def due_tasks(agora: int) -> list[dict]:
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM scheduled_tasks WHERE status = 'pendente' AND executar_em <= ?",
+            (agora,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+
+def finish_task(task_id: int, status: str, resultado: str = "") -> None:
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE scheduled_tasks SET status = ?, resultado = ? WHERE id = ?",
+            (status, resultado, task_id),
+        )
+
+
+def cancel_task(task_id: int) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE scheduled_tasks SET status = 'cancelada' WHERE id = ? AND status = 'pendente'",
+            (task_id,),
+        )
