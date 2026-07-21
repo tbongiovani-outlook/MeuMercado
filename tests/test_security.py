@@ -22,6 +22,7 @@ def _fake_request(path="/"):
 
 # --- CSRF ----------------------------------------------------------------------
 
+
 def test_csrf_bloqueia_origem_externa(client):
     r = client.post(
         "/entrar",
@@ -44,6 +45,7 @@ def test_csrf_permite_mesma_origem(client):
 
 
 # --- Páginas de erro -----------------------------------------------------------
+
 
 def test_pagina_404_com_marca(client):
     r = client.get("/rota-que-nao-existe", follow_redirects=False)

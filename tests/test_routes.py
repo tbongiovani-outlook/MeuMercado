@@ -4,8 +4,8 @@ import pytest
 
 from app import database
 
-
 # --- Fluxo de conta / autenticação --------------------------------------------
+
 
 def test_home_sem_usuario_redireciona_criar_conta(client):
     r = client.get("/", follow_redirects=False)
@@ -70,6 +70,7 @@ def test_entrar_valido_e_sair(client):
 
 def _hash(pw):
     from app import auth
+
     return auth.hash_password(pw)
 
 
@@ -122,6 +123,7 @@ def test_rotas_exigem_login(client):
 
 # --- Ações (POST) --------------------------------------------------------------
 
+
 def test_configuracao_save(auth_client):
     r = auth_client.post(
         "/configuracao",
@@ -141,25 +143,26 @@ def test_configuracao_save(auth_client):
 def test_publicar(auth_client):
     r = auth_client.post(
         "/publicar",
-        data={"title": "Meu produto novo de teste", "price": 99.9,
-              "available_quantity": 3, "condition": "new",
-              "listing_type_id": "gold_special", "category_id": "MLB1234"},
+        data={
+            "title": "Meu produto novo de teste",
+            "price": 99.9,
+            "available_quantity": 3,
+            "condition": "new",
+            "listing_type_id": "gold_special",
+            "category_id": "MLB1234",
+        },
         follow_redirects=False,
     )
     assert r.status_code == 200
 
 
 def test_anuncio_status(auth_client):
-    r = auth_client.post(
-        "/anuncios/MLB1/status", data={"status": "paused"}, follow_redirects=False
-    )
+    r = auth_client.post("/anuncios/MLB1/status", data={"status": "paused"}, follow_redirects=False)
     assert r.status_code == 303
 
 
 def test_anuncio_status_invalido(auth_client):
-    r = auth_client.post(
-        "/anuncios/MLB1/status", data={"status": "zzz"}, follow_redirects=False
-    )
+    r = auth_client.post("/anuncios/MLB1/status", data={"status": "zzz"}, follow_redirects=False)
     assert r.status_code == 303
 
 
@@ -180,17 +183,19 @@ def test_anuncios_massa(auth_client):
 def test_editar_anuncio_post(auth_client):
     r = auth_client.post(
         "/anuncios/MLB1/editar",
-        data={"price": 120, "available_quantity": 4,
-              "title": "Titulo editado do anuncio", "description": "nova descricao"},
+        data={
+            "price": 120,
+            "available_quantity": 4,
+            "title": "Titulo editado do anuncio",
+            "description": "nova descricao",
+        },
         follow_redirects=False,
     )
     assert r.status_code == 303
 
 
 def test_aplicar_preco(auth_client):
-    r = auth_client.post(
-        "/anuncios/MLB1/preco", data={"price": 88.5}, follow_redirects=False
-    )
+    r = auth_client.post("/anuncios/MLB1/preco", data={"price": 88.5}, follow_redirects=False)
     assert r.status_code == 303
 
 
@@ -247,6 +252,7 @@ def test_promocoes_aplicar_remover(auth_client):
 
 def test_agendamentos(auth_client):
     from datetime import datetime, timedelta
+
     futuro = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M")
     r = auth_client.post(
         "/agendamentos",
@@ -256,17 +262,14 @@ def test_agendamentos(auth_client):
     assert r.status_code == 303
     tarefas = database.list_tasks()
     assert len(tarefas) == 1
-    r2 = auth_client.post(
-        f"/agendamentos/{tarefas[0]['id']}/cancelar", follow_redirects=False
-    )
+    r2 = auth_client.post(f"/agendamentos/{tarefas[0]['id']}/cancelar", follow_redirects=False)
     assert r2.status_code == 303
 
 
 def test_agendamento_data_passada(auth_client):
     r = auth_client.post(
         "/agendamentos",
-        data={"tipo": "pausar", "item_id": "MLB1", "quando": "2000-01-01T00:00",
-              "valor": 0},
+        data={"tipo": "pausar", "item_id": "MLB1", "quando": "2000-01-01T00:00", "valor": 0},
         follow_redirects=False,
     )
     assert r.status_code == 303
@@ -287,6 +290,7 @@ def test_respostas_crud(auth_client):
 
 
 # --- OAuth ---------------------------------------------------------------------
+
 
 def test_conectar_redireciona(auth_client):
     r = auth_client.get("/mercadolivre/conectar", follow_redirects=False)

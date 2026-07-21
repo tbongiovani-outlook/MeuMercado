@@ -73,9 +73,7 @@ def setup_telemetry(app) -> None:
     except Exception:  # noqa: BLE001
         __version__ = "0.0.0"
 
-    resource = Resource.create(
-        {"service.name": "meu-mercado", "service.version": __version__}
-    )
+    resource = Resource.create({"service.name": "meu-mercado", "service.version": __version__})
     provider = TracerProvider(resource=resource)
 
     endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")

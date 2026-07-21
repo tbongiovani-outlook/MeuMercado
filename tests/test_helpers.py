@@ -1,14 +1,14 @@
 """Testes das funções utilitárias do módulo principal (lógica pura e de cache)."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
 from app import database, main, meli
 from tests.conftest import mock_meli
 
-
 # --- Comparação de tendência ---------------------------------------------------
+
 
 def test_trend():
     assert main._trend(0, 0) == {"dir": "flat", "pct": None}
@@ -19,6 +19,7 @@ def test_trend():
 
 
 # --- Datas ---------------------------------------------------------------------
+
 
 def test_order_dt():
     assert main._order_dt({}) is None
@@ -35,6 +36,7 @@ def test_datetimebr():
 
 # --- Busca em pedidos ----------------------------------------------------------
 
+
 def test_order_bate():
     order = {
         "id": 123,
@@ -49,13 +51,20 @@ def test_order_bate():
 
 # --- Métricas de pedidos -------------------------------------------------------
 
+
 def test_orders_metrics():
-    agora = datetime(2026, 7, 21, tzinfo=timezone.utc)
+    agora = datetime(2026, 7, 21, tzinfo=UTC)
     orders = [
-        {"date_created": (agora - timedelta(days=1)).isoformat(),
-         "total_amount": 100, "order_items": [{"sale_fee": 10}]},
-        {"date_created": (agora - timedelta(days=40)).isoformat(),
-         "total_amount": 50, "order_items": [{"sale_fee": 5}]},
+        {
+            "date_created": (agora - timedelta(days=1)).isoformat(),
+            "total_amount": 100,
+            "order_items": [{"sale_fee": 10}],
+        },
+        {
+            "date_created": (agora - timedelta(days=40)).isoformat(),
+            "total_amount": 50,
+            "order_items": [{"sale_fee": 5}],
+        },
     ]
     m = main._orders_metrics(orders, agora)
     assert m["vendas_30d"] == 1
@@ -80,6 +89,7 @@ def test_destaques_ativos():
 
 # --- Payload de edição em massa ------------------------------------------------
 
+
 def test_payload_massa(monkeypatch):
     monkeypatch.setattr(meli, "get_item", lambda iid: {"price": 100.0})
     assert main._payload_massa("estoque", 7, "MLB1") == {"available_quantity": 7}
@@ -92,12 +102,14 @@ def test_payload_massa(monkeypatch):
 
 # --- Concorrência --------------------------------------------------------------
 
+
 def test_count_acima_concorrencia(monkeypatch):
     detalhes = [
         {"status": "active", "catalog_product_id": "CAT1", "price": 150.0, "id": "A"},
     ]
     monkeypatch.setattr(
-        meli, "get_catalog_competitors",
+        meli,
+        "get_catalog_competitors",
         lambda pid: [{"id": "Z", "price": 100.0}],
     )
     assert main._count_acima_concorrencia(detalhes) == 1
@@ -115,6 +127,7 @@ def test_recomendacao_da_sugestao():
 
 
 # --- Sugestão de resposta ------------------------------------------------------
+
 
 def test_sugerir_resposta():
     respostas = [
@@ -135,6 +148,7 @@ def test_tokens_remove_stopwords():
 
 
 # --- Cache ---------------------------------------------------------------------
+
 
 def test_cache_ler_gravar(temp_db):
     ts = main._cache_gravar("chave", {"a": 1})
@@ -179,12 +193,13 @@ def test_invalidar_cache_itens(temp_db, monkeypatch):
 
 # --- Execução de tarefas agendadas ---------------------------------------------
 
+
 def test_executar_tarefa(monkeypatch):
     chamadas = {}
-    monkeypatch.setattr(meli, "update_item_status",
-                        lambda iid, status: chamadas.update(status=status))
-    monkeypatch.setattr(meli, "update_item",
-                        lambda iid, payload: chamadas.update(payload=payload))
+    monkeypatch.setattr(
+        meli, "update_item_status", lambda iid, status: chamadas.update(status=status)
+    )
+    monkeypatch.setattr(meli, "update_item", lambda iid, payload: chamadas.update(payload=payload))
     main._executar_tarefa({"tipo": "pausar", "item_id": "MLB1", "valor": None})
     assert chamadas["status"] == "paused"
     main._executar_tarefa({"tipo": "preco", "item_id": "MLB1", "valor": 50})
@@ -195,6 +210,7 @@ def test_executar_tarefa(monkeypatch):
 
 def test_run_due_tasks(temp_db, monkeypatch):
     import time
+
     monkeypatch.setattr(meli, "update_item_status", lambda iid, status: None)
     database.add_task("pausar", "MLB1", int(time.time()) - 5, "Titulo")
     main._run_due_tasks()

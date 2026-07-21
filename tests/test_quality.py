@@ -5,8 +5,7 @@ from app import quality
 
 def _item(**over):
     base = {
-        "pictures": [{"id": "1"}, {"id": "2"}, {"id": "3"}, {"id": "4"},
-                     {"id": "5"}, {"id": "6"}],
+        "pictures": [{"id": "1"}, {"id": "2"}, {"id": "3"}, {"id": "4"}, {"id": "5"}, {"id": "6"}],
         "shipping": {"free_shipping": True},
         "attributes": [],
         "listing_type_id": "gold_special",
@@ -49,8 +48,9 @@ def test_evaluate_anuncio_otimo():
 
 
 def test_evaluate_anuncio_fraco():
-    item = _item(pictures=[], shipping={}, listing_type_id="free",
-                 title="curto", available_quantity=0)
+    item = _item(
+        pictures=[], shipping={}, listing_type_id="free", title="curto", available_quantity=0
+    )
     resultado = quality.evaluate(item, "", [])
     assert resultado["percent"] < 55
     assert resultado["nivel"] == "A melhorar"
