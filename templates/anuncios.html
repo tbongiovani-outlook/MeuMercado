@@ -2,12 +2,19 @@
 {% block title %}Anúncios · Meu Mercado{% endblock %}
 {% block nav %}{% include "_nav.html" %}{% endblock %}
 
-{% block content %}
-<div class="row">
-    <h1>Meus anúncios <span class="badge">{{ total_itens if total_itens is not none else items|length }}</span></h1>
-    <a class="btn btn--primary" href="/publicar">Publicar novo</a>
-</div>
+{% block hero %}
+<header class="page-header">
+    <div>
+        <h1 class="page-header__title">Anúncios</h1>
+        <p class="page-header__sub">Gerencie, filtre, edite e publique seus anúncios.</p>
+    </div>
+    <div class="page-header__actions">
+        <a class="btn btn--primary" href="/publicar">Publicar novo</a>
+    </div>
+</header>
+{% endblock %}
 
+{% block content %}
 {% if flash %}<div class="alert alert--ok" role="status">{{ flash }}</div>{% endif %}
 {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
 
@@ -117,9 +124,16 @@
     </nav>
     {% endif %}
     {% else %}
-    <p class="muted">
-        {% if q or status_filtro %}Nenhum anúncio corresponde ao filtro.{% else %}Nenhum anúncio encontrado.{% endif %}
-    </p>
+    <div class="empty">
+        <div class="empty__icon" aria-hidden="true">🏷️</div>
+        {% if q or status_filtro %}
+        <p class="empty__title">Nenhum anúncio corresponde ao filtro</p>
+        <p>Tente limpar a busca ou trocar o status.</p>
+        {% else %}
+        <p class="empty__title">Nenhum anúncio ainda</p>
+        <p>Clique em “Publicar novo” para criar seu primeiro anúncio.</p>
+        {% endif %}
+    </div>
     {% endif %}
 </section>
 {% endblock %}

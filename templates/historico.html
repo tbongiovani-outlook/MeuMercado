@@ -2,11 +2,16 @@
 {% block title %}Histórico · Meu Mercado{% endblock %}
 {% block nav %}{% include "_nav.html" %}{% endblock %}
 
-{% block content %}
-<h1>Histórico de desempenho</h1>
-<p class="muted">Evolução diária das suas métricas. Os dados vão sendo registrados a cada
-    visita ao painel — quanto mais você usa, mais completo fica o histórico.</p>
+{% block hero %}
+<header class="page-header">
+    <div>
+        <h1 class="page-header__title">Histórico de desempenho</h1>
+        <p class="page-header__sub">Evolução diária das suas métricas — quanto mais você usa, mais completo fica.</p>
+    </div>
+</header>
+{% endblock %}
 
+{% block content %}
 {% if snapshots %}
 <section class="card">
     <h2>Faturamento (30 dias) por data de registro</h2>
@@ -47,6 +52,10 @@
     </table>
 </section>
 {% else %}
-<p class="muted">Ainda não há histórico. Visite o painel para começar a registrar.</p>
+<div class="empty">
+    <div class="empty__icon" aria-hidden="true">📈</div>
+    <p class="empty__title">Ainda não há histórico</p>
+    <p>Abra o painel de vez em quando — os dados vão sendo registrados automaticamente.</p>
+</div>
 {% endif %}
 {% endblock %}

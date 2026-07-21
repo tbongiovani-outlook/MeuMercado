@@ -475,6 +475,7 @@ def sair(request: Request):
 def configuracao_form(request: Request):
     if not _current_user_id(request):
         return _redirect("/entrar")
+    conectado, conta = _conta_conectada()
     context = {
         "error": None,
         "saved": False,
@@ -483,8 +484,21 @@ def configuracao_form(request: Request):
         "redirect_uri": meli.get_redirect_uri(),
         "estoque_baixo": _limite_estoque_baixo(),
         "cache_ttl_min": int(database.get_config("cache_ttl_min") or 15),
+        "connected": conectado,
+        "ml_user": conta,
     }
     return templates.TemplateResponse(request, "configuracao.html", context)
+
+
+def _conta_conectada():
+    """Retorna (conectado, dados_da_conta) usando o cache, sem travar a tela."""
+    if not database.get_token():
+        return False, None
+    try:
+        conta, _ = _me_cached()
+        return True, conta
+    except Exception:  # noqa: BLE001
+        return True, None
 
 
 @app.post("/configuracao")
@@ -515,6 +529,8 @@ def configuracao_save(
         "redirect_uri": meli.get_redirect_uri(),
         "estoque_baixo": _limite_estoque_baixo(),
         "cache_ttl_min": int(database.get_config("cache_ttl_min") or 15),
+        "connected": _conta_conectada()[0],
+        "ml_user": _conta_conectada()[1],
     }
     return templates.TemplateResponse(request, "configuracao.html", context)
 

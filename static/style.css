@@ -662,6 +662,84 @@ code {
     border-top: 1px solid var(--border);
 }
 
+/* Sair no canto direito da barra superior */
+.topbar__spacer { flex: 1; }
+.topbar__logout {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.42rem 0.85rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    min-height: 38px;
+}
+.topbar__logout:hover { background: var(--surface-2); border-color: #d5d9e6; }
+.topbar__logout .ico { font-size: 1rem; line-height: 1; }
+@media (max-width: 560px) {
+    .topbar__logout .txt { display: none; }
+    .topbar__logout { padding: 0.42rem 0.6rem; }
+}
+
+/* Cabeçalho de página com faixa de gradiente */
+.page-header {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem 1.25rem;
+    flex-wrap: wrap;
+    background: var(--brand-grad);
+    color: #fff;
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 1.7rem;
+    margin-bottom: 1.6rem;
+    box-shadow: 0 12px 28px -14px rgba(79, 70, 229, .65);
+    overflow: hidden;
+}
+.page-header::after {
+    content: "";
+    position: absolute;
+    right: -6%;
+    top: -70%;
+    width: 260px;
+    height: 260px;
+    background: radial-gradient(circle, rgba(255, 255, 255, .16), transparent 62%);
+    pointer-events: none;
+}
+.page-header > div { position: relative; z-index: 1; }
+.page-header__title { margin: 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; color: #fff; }
+.page-header__sub { margin: 0.35rem 0 0; opacity: 0.92; font-size: 0.95rem; max-width: 62ch; }
+.page-header__actions { position: relative; z-index: 1; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.page-header .btn--primary { background: #fff; color: var(--brand-strong); box-shadow: none; }
+.page-header .btn--primary:hover { filter: none; background: #eef0ff; box-shadow: none; }
+.page-header .btn--ghost { background: rgba(255, 255, 255, .16); border-color: rgba(255, 255, 255, .4); color: #fff; }
+.page-header .btn--ghost:hover { background: rgba(255, 255, 255, .26); border-color: rgba(255, 255, 255, .5); }
+
+/* Estado vazio amigável */
+.empty {
+    text-align: center;
+    padding: 2.25rem 1rem;
+    color: var(--muted);
+}
+.empty__icon {
+    width: 58px;
+    height: 58px;
+    margin: 0 auto 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.7rem;
+    border-radius: 16px;
+    background: var(--brand-soft);
+}
+.empty__title { margin: 0 0 0.3rem; font-weight: 700; color: var(--text); font-size: 1.02rem; }
+.empty p { margin: 0 auto; max-width: 46ch; }
+
 /* Telas de autenticação (entrar / criar conta) */
 .auth {
     display: grid;

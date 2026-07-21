@@ -2,12 +2,21 @@
 {% block title %}Vendas · Meu Mercado{% endblock %}
 {% block nav %}{% include "_nav.html" %}{% endblock %}
 
-{% block content %}
-<div class="row">
-    <h1>Vendas e entregas <span class="badge">{{ total_vendas if total_vendas is not none else orders|length }}</span></h1>
-    {% if orders %}<a class="btn btn--ghost" href="/vendas/exportar">Exportar CSV</a>{% endif %}
-</div>
+{% block hero %}
+<header class="page-header">
+    <div>
+        <h1 class="page-header__title">Vendas e entregas</h1>
+        <p class="page-header__sub">Acompanhe pedidos, status de envio e exporte relatórios.</p>
+    </div>
+    {% if orders %}
+    <div class="page-header__actions">
+        <a class="btn btn--ghost" href="/vendas/exportar">Exportar CSV</a>
+    </div>
+    {% endif %}
+</header>
+{% endblock %}
 
+{% block content %}
 {% if flash %}<div class="alert alert--ok" role="status">{{ flash }}</div>{% endif %}
 {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
 
@@ -47,7 +56,11 @@
     </nav>
     {% endif %}
     {% else %}
-    <p class="muted">Nenhuma venda encontrada.</p>
+    <div class="empty">
+        <div class="empty__icon" aria-hidden="true">🛒</div>
+        <p class="empty__title">Nenhuma venda ainda</p>
+        <p>Assim que você vender, os pedidos aparecem aqui.</p>
+    </div>
     {% endif %}
 </section>
 {% endblock %}

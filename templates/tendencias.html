@@ -2,11 +2,16 @@
 {% block title %}Tendências · Meu Mercado{% endblock %}
 {% block nav %}{% include "_nav.html" %}{% endblock %}
 
-{% block content %}
-<h1>Tendências de busca</h1>
-<p class="muted">O que os compradores estão mais procurando agora no Mercado Livre.
-    Use estas palavras nos títulos e descrições dos seus anúncios para aparecer mais.</p>
+{% block hero %}
+<header class="page-header">
+    <div>
+        <h1 class="page-header__title">Tendências de busca</h1>
+        <p class="page-header__sub">O que os compradores mais procuram agora. Use estas palavras nos seus anúncios.</p>
+    </div>
+</header>
+{% endblock %}
 
+{% block content %}
 {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
 {% if aviso %}<div class="alert alert--warn" role="status">{{ aviso }}</div>{% endif %}
 
@@ -53,7 +58,11 @@
         {% endfor %}
     </ol>
     {% else %}
-    <p class="muted">Nenhuma tendência disponível no momento.</p>
+    <div class="empty">
+        <div class="empty__icon" aria-hidden="true">🔥</div>
+        <p class="empty__title">Nenhuma tendência disponível</p>
+        <p>Tente outra categoria ou volte mais tarde.</p>
+    </div>
     {% endif %}
 </section>
 {% endblock %}

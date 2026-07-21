@@ -4,6 +4,15 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Meu Mercado{% endblock %}</title>
+    <meta name="description" content="Painel local para vendedores do Mercado Livre: anúncios, vendas, pós-venda, preços e tendências em um só lugar.">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Meu Mercado">
+    <meta property="og:title" content="Meu Mercado">
+    <meta property="og:description" content="Seu painel local para vender melhor no Mercado Livre.">
+    <meta property="og:locale" content="pt_BR">
+    <meta name="twitter:card" content="summary">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -32,6 +41,12 @@
             </span>
             <span class="brand__name">Meu <b>Mercado</b></span>
         </a>
+        <span class="topbar__spacer"></span>
+        {% if request.session.get('user_id') %}
+        <a class="topbar__logout" href="/sair" title="Sair do sistema">
+            <span class="ico" aria-hidden="true">⏻</span><span class="txt">Sair</span>
+        </a>
+        {% endif %}
     </header>
     <div class="layout">
         <div class="sidebar__overlay" id="sidebar-overlay" hidden></div>
@@ -39,6 +54,7 @@
             {% block nav %}{% endblock %}
         </aside>
         <main class="container" id="conteudo" tabindex="-1">
+            {% block hero %}{% endblock %}
             {% block content %}{% endblock %}
             <footer class="footer">
                 <small>Meu Mercado · integração com a API do Mercado Livre</small>

@@ -3,9 +3,41 @@
 
 {% block nav %}{% include "_nav.html" %}{% endblock %}
 
+{% block hero %}
+<header class="page-header">
+    <div>
+        <h1 class="page-header__title">Configuração</h1>
+        <p class="page-header__sub">Conta conectada, credenciais do Mercado Livre e preferências do aplicativo.</p>
+    </div>
+</header>
+{% endblock %}
+
 {% block content %}
 <section class="card">
-    <h1>Configuração do Mercado Livre</h1>
+    <h2>Conta do Mercado Livre</h2>
+    {% if connected %}
+    <div class="row">
+        <div>
+            {% if ml_user %}
+            <p><strong>{{ ml_user.nickname }}</strong> · ID {{ ml_user.id }}</p>
+            {% if ml_user.seller_reputation and ml_user.seller_reputation.level_id %}
+            <p class="muted">Reputação: {{ ml_user.seller_reputation.level_id }}</p>
+            {% endif %}
+            {% else %}
+            <p><strong>Conta conectada</strong></p>
+            {% endif %}
+        </div>
+        <a class="btn btn--ghost" href="/mercadolivre/desconectar"
+           onclick="return confirm('Desconectar a conta do Mercado Livre? Você precisará conectá-la novamente para ver seus dados. Isso não sai do sistema.');">Desconectar conta</a>
+    </div>
+    {% else %}
+    <p class="muted">Nenhuma conta do Mercado Livre conectada.</p>
+    <a class="btn btn--primary" href="/mercadolivre/conectar">Conectar com o Mercado Livre</a>
+    {% endif %}
+</section>
+
+<section class="card">
+    <h2>Credenciais e preferências</h2>
     <p class="muted">
         Informe os dados da sua aplicação criada no
         <a href="https://developers.mercadolivre.com.br/devcenter" target="_blank" rel="noopener">DevCenter do Mercado Livre</a>.

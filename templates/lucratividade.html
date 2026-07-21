@@ -2,13 +2,21 @@
 {% block title %}Lucratividade · Meu Mercado{% endblock %}
 {% block nav %}{% include "_nav.html" %}{% endblock %}
 
-{% block content %}
-<div class="row">
-    <h1>Lucratividade</h1>
-    {% if linhas %}<a class="btn btn--ghost" href="/lucratividade/exportar">Exportar CSV</a>{% endif %}
-</div>
-<p class="muted">Receita, comissões do Mercado Livre e valor líquido por venda.</p>
+{% block hero %}
+<header class="page-header">
+    <div>
+        <h1 class="page-header__title">Lucratividade</h1>
+        <p class="page-header__sub">Receita, comissões do Mercado Livre e valor líquido por venda.</p>
+    </div>
+    {% if linhas %}
+    <div class="page-header__actions">
+        <a class="btn btn--ghost" href="/lucratividade/exportar">Exportar CSV</a>
+    </div>
+    {% endif %}
+</header>
+{% endblock %}
 
+{% block content %}
 {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
 
 <div class="grid">

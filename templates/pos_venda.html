@@ -2,10 +2,16 @@
 {% block title %}Pós-venda · Meu Mercado{% endblock %}
 {% block nav %}{% include "_nav.html" %}{% endblock %}
 
-{% block content %}
-<h1>Central pós-venda</h1>
-<p class="muted">Perguntas e reclamações reunidas em um só lugar.</p>
+{% block hero %}
+<header class="page-header">
+    <div>
+        <h1 class="page-header__title">Central pós-venda</h1>
+        <p class="page-header__sub">Perguntas e reclamações reunidas em um só lugar.</p>
+    </div>
+</header>
+{% endblock %}
 
+{% block content %}
 {% if flash %}<div class="alert alert--ok" role="status">{{ flash }}</div>{% endif %}
 {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
 {% for aviso in avisos %}
@@ -62,7 +68,11 @@
             {% endfor %}
         </ul>
         {% else %}
-        <p class="muted">Nenhuma pergunta pendente.</p>
+        <div class="empty">
+            <div class="empty__icon" aria-hidden="true">💬</div>
+            <p class="empty__title">Nenhuma pergunta pendente</p>
+            <p>Você está em dia! Novas perguntas aparecem aqui.</p>
+        </div>
         {% endif %}
     </section>
 
@@ -79,7 +89,11 @@
             {% endfor %}
         </ul>
         {% else %}
-        <p class="muted">Nenhuma reclamação aberta.</p>
+        <div class="empty">
+            <div class="empty__icon" aria-hidden="true">✅</div>
+            <p class="empty__title">Nenhuma reclamação aberta</p>
+            <p>Tudo tranquilo com seus pedidos.</p>
+        </div>
         {% endif %}
     </section>
 </div>

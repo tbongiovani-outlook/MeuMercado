@@ -2,10 +2,16 @@
 {% block title %}Estatísticas · Meu Mercado{% endblock %}
 {% block nav %}{% include "_nav.html" %}{% endblock %}
 
-{% block content %}
-<h1>Estatísticas dos anúncios</h1>
-<p class="muted">Visitas, vendas e taxa de conversão por anúncio.</p>
+{% block hero %}
+<header class="page-header">
+    <div>
+        <h1 class="page-header__title">Estatísticas</h1>
+        <p class="page-header__sub">Visitas, vendas e taxa de conversão por anúncio.</p>
+    </div>
+</header>
+{% endblock %}
 
+{% block content %}
 {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
 
 <section class="card">
