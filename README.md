@@ -320,6 +320,7 @@ curl -X POST \
 - [x] Mensagens pós-venda por pedido (ler e responder)
 - [x] Painel de qualidade/posicionamento do anúncio (índice + checklist)
 - [x] Melhorias de usabilidade (agrupamento de campos, dicas, feedback, responsividade)
+- [x] Análise de concorrência de preço (catálogo) + taxa de conversão por anúncio
 
 ---
 
