@@ -329,6 +329,23 @@ curl -X POST \
 - [x] Duplicar anúncio (cópia criada já pausada para revisão)
 - [x] Edição em massa de preço e estoque (definir, aumentar/reduzir %)
 
+### 🚧 Próximas melhorias (em execução)
+
+- [ ] Busca e filtro na lista de anúncios (por título e status)
+- [ ] Duplicar anúncio abrindo direto na tela de edição
+- [ ] Feedback visual ao enviar mensagens/respostas
+- [ ] Tendências filtráveis por categoria do vendedor
+- [ ] Recomendação de preço (sugestão do ML + concorrência)
+- [ ] Histórico de preço e vendas (snapshots diários + gráfico)
+- [ ] Perguntas em massa (responder várias de uma vez)
+- [ ] Sugestão automática de resposta a partir da pergunta
+- [ ] Indicador de Full / Mercado Envios nos anúncios
+- [ ] Promoções e descontos (`/seller-promotions`)
+- [ ] Exportar relatórios (CSV) de vendas e lucratividade
+- [ ] Renovação automática do token (refresh proativo)
+- [ ] Paginação de anúncios e vendas
+- [ ] Agendamento de ações (pausar/reativar/promoções programadas)
+
 ---
 
 ## 📄 Licença
