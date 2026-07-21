@@ -386,6 +386,10 @@ def search_orders(seller_id: int, limit: int = 30) -> list[dict]:
     return data.get("results", [])
 
 
+def get_order(order_id: str) -> dict:
+    return api_get(f"/orders/{order_id}")
+
+
 def get_shipment(shipment_id: int) -> dict:
     return api_get(f"/shipments/{shipment_id}")
 
@@ -398,9 +402,23 @@ def search_questions(seller_id: int, status: str = "UNANSWERED") -> dict:
     )
 
 
-def get_pack_messages(pack_id: int, user_id: int) -> dict:
+def get_pack_messages(pack_id: str, seller_id: int) -> dict:
     """Mensagens pós-venda de um pack/pedido."""
-    return api_get(f"/messages/packs/{pack_id}/sellers/{user_id}")
+    return api_get(
+        f"/messages/packs/{pack_id}/sellers/{seller_id}", {"tag": "post_sale"}
+    )
+
+
+def send_pack_message(pack_id: str, seller_id: int, buyer_id: int, text: str) -> dict:
+    """Envia uma mensagem pós-venda ao comprador."""
+    return api_post(
+        f"/messages/packs/{pack_id}/sellers/{seller_id}?tag=post_sale",
+        {
+            "from": {"user_id": str(seller_id)},
+            "to": {"user_id": str(buyer_id)},
+            "text": text,
+        },
+    )
 
 
 def search_claims(limit: int = 20, status: str = "opened") -> dict:

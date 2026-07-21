@@ -13,7 +13,7 @@
         <thead>
             <tr>
                 <th>Pedido</th><th>Data</th><th>Status</th>
-                <th>Total</th><th>Entrega</th>
+                <th>Total</th><th>Entrega</th><th></th>
             </tr>
         </thead>
         <tbody>
@@ -30,6 +30,7 @@
                         <span class="muted">—</span>
                     {% endif %}
                 </td>
+                <td><a class="btn btn--ghost btn--sm" href="/vendas/{{ order.id }}/mensagens">Mensagens</a></td>
             </tr>
             {% endfor %}
         </tbody>

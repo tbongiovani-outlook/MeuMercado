@@ -101,6 +101,18 @@ h2 { margin-top: 0; font-size: 1.05rem; }
     font-size: 0.9rem;
 }
 
+.chat { list-style: none; margin: 0 0 1rem; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.chat__msg {
+    max-width: 75%;
+    padding: 0.5rem 0.75rem;
+    border-radius: 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    align-self: flex-start;
+}
+.chat__msg--me { align-self: flex-end; background: #eef3ff; border-color: #c9d8ff; }
+.chat__msg p { margin: 0 0 0.25rem; }
+
 .alert {
     padding: 0.75rem 1rem;
     border-radius: 8px;

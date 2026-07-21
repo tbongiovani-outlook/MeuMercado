@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Mensagens · Meu Mercado{% endblock %}
+{% block nav %}{% include "_nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <h1>Mensagens do pedido</h1>
+    <a class="btn btn--ghost" href="/vendas">Voltar</a>
+</div>
+<p class="muted">Pedido <code>{{ order_id }}</code></p>
+
+{% if flash %}<div class="alert alert--ok">{{ flash }}</div>{% endif %}
+{% if error %}<div class="alert alert--error">{{ error }}</div>{% endif %}
+
+<section class="card">
+    {% if messages %}
+    <ul class="chat">
+        {% for m in messages %}
+        <li class="chat__msg {% if m.from.user_id|string == seller_id|string %}chat__msg--me{% endif %}">
+            <p>{{ m.text }}</p>
+            <small class="muted">{{ (m.message_date.created or '')[:16] | replace('T', ' ') }}</small>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">Nenhuma mensagem nesta conversa.</p>
+    {% endif %}
+
+    {% if buyer_id %}
+    <form class="reply" method="post" action="/vendas/{{ order_id }}/mensagens">
+        <input type="hidden" name="pack_id" value="{{ pack_id }}">
+        <input type="hidden" name="buyer_id" value="{{ buyer_id }}">
+        <input type="text" name="text" required maxlength="2000" placeholder="Escreva uma mensagem…">
+        <button class="btn btn--primary btn--sm" type="submit">Enviar</button>
+    </form>
+    {% endif %}
+</section>
+{% endblock %}

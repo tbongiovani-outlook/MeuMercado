@@ -503,6 +503,50 @@ def vendas(request: Request):
     return templates.TemplateResponse(request, "vendas.html", ctx)
 
 
+@app.get("/vendas/{order_id}/mensagens")
+def mensagens_form(request: Request, order_id: str):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    ctx = _base_context(request)
+    ctx.update({"order_id": order_id, "messages": [], "pack_id": order_id,
+                "buyer_id": None, "seller_id": None})
+    try:
+        me = meli.get_me()
+        ctx["seller_id"] = me["id"]
+        order = meli.get_order(order_id)
+        pack_id = order.get("pack_id") or order_id
+        ctx["pack_id"] = pack_id
+        ctx["buyer_id"] = (order.get("buyer") or {}).get("id")
+        msgs = meli.get_pack_messages(pack_id, me["id"])
+        ctx["messages"] = msgs.get("messages", [])
+    except Exception as exc:  # noqa: BLE001
+        ctx["error"] = f"Não foi possível carregar as mensagens: {exc}"
+    return templates.TemplateResponse(request, "mensagens.html", ctx)
+
+
+@app.post("/vendas/{order_id}/mensagens")
+def enviar_mensagem(
+    request: Request,
+    order_id: str,
+    pack_id: str = Form(...),
+    buyer_id: int = Form(...),
+    text: str = Form(...),
+):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    try:
+        me = meli.get_me()
+        meli.send_pack_message(pack_id, me["id"], buyer_id, text.strip())
+        request.session["flash"] = "Mensagem enviada."
+        logger.info("Mensagem enviada no pedido %s.", order_id)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Falha ao enviar mensagem")
+        request.session["flash"] = f"Não foi possível enviar a mensagem: {exc}"
+    return _redirect(f"/vendas/{order_id}/mensagens")
+
+
 # ---------------------------------------------------------------------------
 # Pós-venda (perguntas + reclamações)
 # ---------------------------------------------------------------------------
