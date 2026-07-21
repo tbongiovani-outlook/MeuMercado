@@ -16,10 +16,31 @@
     <section class="card">
         <h2>Perguntas <span class="badge">{{ questions|length }}</span></h2>
         {% if questions %}
+        <form class="bulkbar" method="post" action="/pos-venda/responder-massa" id="form-perguntas-massa"
+              onsubmit="return confirm('Enviar esta resposta às perguntas selecionadas?');">
+            {% if respostas %}
+            <select class="reply__tpl" aria-label="Usar resposta rápida">
+                <option value="">Resposta rápida…</option>
+                {% for r in respostas %}
+                <option value="{{ r.texto }}">{{ r.titulo }}</option>
+                {% endfor %}
+            </select>
+            {% endif %}
+            <input type="text" name="text" required maxlength="2000" placeholder="Resposta para as selecionadas…">
+            <button class="btn btn--primary btn--sm" type="submit">Responder selecionadas</button>
+        </form>
         <ul class="list">
             {% for q in questions %}
             <li>
-                <strong>{{ q.text }}</strong><br>
+                {% if q.status == 'UNANSWERED' %}
+                <label class="check-inline">
+                    <input type="checkbox" name="question_ids" value="{{ q.id }}" form="form-perguntas-massa">
+                    <strong>{{ q.text }}</strong>
+                </label>
+                {% else %}
+                <strong>{{ q.text }}</strong>
+                {% endif %}
+                <br>
                 <small class="muted">item {{ q.item_id }} · {{ (q.date_created or '')[:10] }} · {{ q.status }}</small>
                 {% if q.status == 'UNANSWERED' %}
                 <form class="reply" method="post" action="/pos-venda/responder">
@@ -32,9 +53,10 @@
                         {% endfor %}
                     </select>
                     {% endif %}
-                    <input type="text" name="text" required maxlength="2000" placeholder="Escreva a resposta…">
+                    <input type="text" name="text" required maxlength="2000" value="{{ q.sugestao or '' }}" placeholder="Escreva a resposta…">
                     <button class="btn btn--primary btn--sm" type="submit">Responder</button>
                 </form>
+                {% if q.sugestao %}<small class="hint">💡 Sugestão preenchida automaticamente — revise antes de enviar.</small>{% endif %}
                 {% endif %}
             </li>
             {% endfor %}

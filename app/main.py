@@ -10,6 +10,7 @@ Fluxo de uso (fácil para o usuário final, roda em Windows e macOS):
 import secrets
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
+import re
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import RedirectResponse
@@ -904,14 +905,19 @@ def pos_venda(request: Request):
     redirect, _ = _require_ready(request)
     if redirect:
         return redirect
+    respostas = database.list_quick_replies()
     ctx = _base_context(request)
-    ctx.update({"questions": [], "claims": [], "avisos": [],
-                "respostas": database.list_quick_replies()})
+    ctx.update({"questions": [], "claims": [], "avisos": [], "respostas": respostas})
     try:
         me = meli.get_me()
         try:
             q = meli.search_questions(me["id"])
-            ctx["questions"] = q.get("questions", [])
+            perguntas = q.get("questions", [])
+            for pergunta in perguntas:
+                pergunta["sugestao"] = _sugerir_resposta(
+                    pergunta.get("text", ""), respostas
+                )
+            ctx["questions"] = perguntas
         except Exception as exc:  # noqa: BLE001
             ctx["avisos"].append(f"Perguntas indisponíveis: {exc}")
         try:
@@ -922,6 +928,35 @@ def pos_venda(request: Request):
     except Exception as exc:  # noqa: BLE001
         ctx["error"] = f"Não foi possível carregar o pós-venda: {exc}"
     return templates.TemplateResponse(request, "pos_venda.html", ctx)
+
+
+_STOPWORDS = {
+    "de", "da", "do", "das", "dos", "que", "para", "com", "uma", "por", "não",
+    "nao", "meu", "minha", "voce", "você", "vcs", "tem", "esse", "essa", "este",
+    "esta", "como", "qual", "quanto", "seu", "sua", "isso", "ola", "olá", "boa",
+    "bom", "dia", "tarde", "noite", "obrigado", "obrigada", "gostaria", "saber",
+}
+
+
+def _tokens(texto: str) -> set[str]:
+    return {
+        t
+        for t in re.findall(r"[a-zà-ú0-9]+", texto.lower())
+        if len(t) > 2 and t not in _STOPWORDS
+    }
+
+
+def _sugerir_resposta(pergunta: str, respostas: list[dict]) -> str:
+    """Sugere o texto da resposta rápida mais parecida com a pergunta."""
+    tokens_p = _tokens(pergunta)
+    if not tokens_p or not respostas:
+        return ""
+    melhor, score = "", 0
+    for r in respostas:
+        n = len(tokens_p & _tokens(f"{r['titulo']} {r['texto']}"))
+        if n > score:
+            score, melhor = n, r["texto"]
+    return melhor if score >= 1 else ""
 
 
 @app.post("/pos-venda/responder")
@@ -938,6 +973,34 @@ def responder_pergunta(
     except Exception as exc:  # noqa: BLE001
         logger.exception("Falha ao responder pergunta")
         request.session["flash"] = f"Não foi possível responder: {exc}"
+    return _redirect("/pos-venda")
+
+
+@app.post("/pos-venda/responder-massa")
+def responder_perguntas_massa(
+    request: Request,
+    text: str = Form(...),
+    question_ids: list[int] = Form(default=[]),
+):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    texto = text.strip()
+    if not question_ids or not texto:
+        request.session["flash"] = "Selecione perguntas e escreva a resposta."
+        return _redirect("/pos-venda")
+    respondidas, erros = 0, 0
+    for qid in question_ids:
+        try:
+            meli.answer_question(qid, texto)
+            respondidas += 1
+        except Exception:  # noqa: BLE001
+            logger.exception("Falha ao responder pergunta %s em massa", qid)
+            erros += 1
+    msg = f"{respondidas} pergunta(s) respondida(s)."
+    if erros:
+        msg += f" {erros} falharam."
+    request.session["flash"] = msg
     return _redirect("/pos-venda")
 
 
@@ -1023,22 +1086,39 @@ def lucratividade(request: Request):
 # Tendências (palavras-chave em alta)
 # ---------------------------------------------------------------------------
 @app.get("/tendencias")
-def tendencias(request: Request, categoria: str = ""):
+def tendencias(request: Request, categoria: str = "", termo: str = ""):
     redirect, _ = _require_ready(request)
     if redirect:
         return redirect
     ctx = _base_context(request)
-    trends, categorias = [], []
+    trends, categorias, categoria_nome = [], [], ""
+    termo = termo.strip()
     try:
         me = meli.get_me()
         ids = meli.list_all_item_ids(me["id"])
         items = meli.get_items_details(ids)
         cat_ids = sorted({it.get("category_id") for it in items if it.get("category_id")})
         categorias = [{"id": c, "nome": meli.get_category_name(c)} for c in cat_ids]
+
+        if termo:
+            previsao = meli.predict_category(termo)
+            categoria = previsao.get("category_id", "")
+            categoria_nome = previsao.get("category_name", "")
+            if not categoria:
+                ctx["aviso"] = f"Não encontramos categoria para “{termo}”. Mostrando tendências gerais."
+        elif categoria:
+            categoria_nome = meli.get_category_name(categoria)
+
         trends = meli.get_trends(categoria)
     except Exception as exc:  # noqa: BLE001
         ctx["error"] = f"Não foi possível carregar as tendências: {exc}"
-    ctx.update({"trends": trends, "categorias": categorias, "categoria": categoria})
+    ctx.update({
+        "trends": trends,
+        "categorias": categorias,
+        "categoria": categoria,
+        "categoria_nome": categoria_nome,
+        "termo": termo,
+    })
     return templates.TemplateResponse(request, "tendencias.html", ctx)
 
 

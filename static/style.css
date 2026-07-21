@@ -310,6 +310,7 @@ h2 { margin-top: 0; font-size: 1.05rem; }
     border-left: 4px solid var(--accent);
     background: #f6f7fc;
 }
+.check-inline { display: inline-flex; align-items: baseline; gap: 0.4rem; }
 .reply__tpl {
     padding: 0.4rem 0.6rem;
     border: 1px solid var(--border);
