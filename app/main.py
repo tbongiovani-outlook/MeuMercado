@@ -638,10 +638,12 @@ def duplicar_anuncio(request: Request, item_id: str):
                 meli.update_item_status(novo_id, "paused")
             except Exception:  # noqa: BLE001
                 logger.warning("Duplicado %s criado, mas não foi possível pausar.", novo_id)
-        request.session["flash"] = (
-            f"Anúncio duplicado: {novo_id} (criado pausado, revise e ative)."
-        )
-        logger.info("Anúncio %s duplicado em %s", item_id, novo_id)
+            request.session["flash"] = (
+                "Cópia criada (pausada). Revise preço e estoque e ative quando quiser."
+            )
+            logger.info("Anúncio %s duplicado em %s", item_id, novo_id)
+            return _redirect(f"/anuncios/{novo_id}/editar")
+        request.session["flash"] = f"Anúncio duplicado: {novo_id}."
     except Exception as exc:  # noqa: BLE001
         logger.exception("Falha ao duplicar anúncio")
         request.session["flash"] = f"Não foi possível duplicar o anúncio: {exc}"
