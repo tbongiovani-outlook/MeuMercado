@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Histórico · Meu Mercado{% endblock %}
+{% block nav %}{% include "_nav.html" %}{% endblock %}
+
+{% block content %}
+<h1>Histórico de desempenho</h1>
+<p class="muted">Evolução diária das suas métricas. Os dados vão sendo registrados a cada
+    visita ao painel — quanto mais você usa, mais completo fica o histórico.</p>
+
+{% if snapshots %}
+<section class="card">
+    <h2>Faturamento (30 dias) por data de registro</h2>
+    <div class="barchart" role="img" aria-label="Gráfico de barras do faturamento por dia">
+        {% for s in snapshots %}
+        <div class="barchart__col">
+            <div class="barchart__bar" style="height: {{ ((s.faturamento or 0) / max_faturamento * 100) | round(1) }}%"
+                 title="{{ s.dia }}: R$ {{ '%.2f'|format(s.faturamento or 0) }}"></div>
+            <span class="barchart__label">{{ s.dia[5:] }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="card">
+    <h2>Registros <span class="badge">{{ snapshots|length }}</span></h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Data</th><th>Vendas (30d)</th><th>Faturamento</th><th>Líquido</th>
+                <th>Ativos</th><th>Sem estoque</th><th>Perguntas</th><th>Reclamações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in snapshots|reverse %}
+            <tr>
+                <td>{{ s.dia }}</td>
+                <td>{{ s.vendas }}</td>
+                <td>R$ {{ '%.2f'|format(s.faturamento or 0) }}</td>
+                <td>R$ {{ '%.2f'|format(s.liquido or 0) }}</td>
+                <td>{{ s.ativos }}</td>
+                <td>{{ s.sem_estoque }}</td>
+                <td>{{ s.perguntas }}</td>
+                <td>{{ s.reclamacoes }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% else %}
+<p class="muted">Ainda não há histórico. Visite o painel para começar a registrar.</p>
+{% endif %}
+{% endblock %}

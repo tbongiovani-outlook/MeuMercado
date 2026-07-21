@@ -269,8 +269,26 @@ def home(request: Request):
             context["orders"] = dados["orders"]
             if dados["avisos"] and not context["error"]:
                 context["error"] = " · ".join(dados["avisos"])
+            _registrar_snapshot(dados["kpis"])
 
     return templates.TemplateResponse(request, "dashboard.html", context)
+
+
+def _registrar_snapshot(kpis: dict) -> None:
+    """Grava o resumo do dia para montar o histórico (best-effort)."""
+    try:
+        hoje = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        database.save_snapshot(hoje, {
+            "vendas": kpis.get("vendas_30d", 0),
+            "faturamento": kpis.get("faturamento_30d", 0.0),
+            "liquido": kpis.get("liquido_30d", 0.0),
+            "ativos": kpis.get("anuncios_ativos", 0),
+            "sem_estoque": kpis.get("sem_estoque", 0),
+            "perguntas": kpis.get("perguntas_pendentes", 0),
+            "reclamacoes": kpis.get("reclamacoes_abertas", 0),
+        })
+    except Exception:  # noqa: BLE001
+        logger.exception("Falha ao gravar snapshot diário")
 
 
 # ---------------------------------------------------------------------------
@@ -1120,6 +1138,18 @@ def tendencias(request: Request, categoria: str = "", termo: str = ""):
         "termo": termo,
     })
     return templates.TemplateResponse(request, "tendencias.html", ctx)
+
+
+@app.get("/historico")
+def historico(request: Request):
+    if not _current_user_id(request):
+        return _redirect("/entrar")
+    ctx = _base_context(request)
+    snaps = database.list_snapshots()
+    ctx["snapshots"] = snaps
+    max_fat = max((s["faturamento"] or 0) for s in snaps) if snaps else 0
+    ctx["max_faturamento"] = max_fat or 1
+    return templates.TemplateResponse(request, "historico.html", ctx)
 
 
 # ---------------------------------------------------------------------------

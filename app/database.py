@@ -66,6 +66,21 @@ def init_db() -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS daily_snapshots (
+                dia         TEXT PRIMARY KEY,
+                vendas      INTEGER,
+                faturamento REAL,
+                liquido     REAL,
+                ativos      INTEGER,
+                sem_estoque INTEGER,
+                perguntas   INTEGER,
+                reclamacoes INTEGER,
+                created_at  INTEGER NOT NULL
+            )
+            """
+        )
 
 
 def save_token(
@@ -182,3 +197,46 @@ def add_quick_reply(titulo: str, texto: str) -> None:
 def delete_quick_reply(reply_id: int) -> None:
     with get_conn() as conn:
         conn.execute("DELETE FROM quick_replies WHERE id = ?", (reply_id,))
+
+
+def save_snapshot(dia: str, dados: dict) -> None:
+    """Grava (ou atualiza) o resumo diário de métricas do painel."""
+    with get_conn() as conn:
+        conn.execute(
+            """
+            INSERT INTO daily_snapshots
+                (dia, vendas, faturamento, liquido, ativos, sem_estoque,
+                 perguntas, reclamacoes, created_at)
+            VALUES (:dia, :vendas, :faturamento, :liquido, :ativos, :sem_estoque,
+                    :perguntas, :reclamacoes, :created_at)
+            ON CONFLICT(dia) DO UPDATE SET
+                vendas = excluded.vendas,
+                faturamento = excluded.faturamento,
+                liquido = excluded.liquido,
+                ativos = excluded.ativos,
+                sem_estoque = excluded.sem_estoque,
+                perguntas = excluded.perguntas,
+                reclamacoes = excluded.reclamacoes,
+                created_at = excluded.created_at
+            """,
+            {
+                "dia": dia,
+                "vendas": int(dados.get("vendas", 0)),
+                "faturamento": float(dados.get("faturamento", 0.0)),
+                "liquido": float(dados.get("liquido", 0.0)),
+                "ativos": int(dados.get("ativos", 0)),
+                "sem_estoque": int(dados.get("sem_estoque", 0)),
+                "perguntas": int(dados.get("perguntas", 0)),
+                "reclamacoes": int(dados.get("reclamacoes", 0)),
+                "created_at": int(time.time()),
+            },
+        )
+
+
+def list_snapshots(limit: int = 60) -> list[dict]:
+    """Retorna os snapshots diários mais recentes (ordem cronológica)."""
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM daily_snapshots ORDER BY dia DESC LIMIT ?", (limit,)
+        ).fetchall()
+        return [dict(r) for r in reversed(rows)]
