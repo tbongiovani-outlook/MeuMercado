@@ -1,6 +1,7 @@
 {% set path = request.url.path %}
 <nav class="nav" aria-label="Navegação principal">
     <a class="nav__item" href="/" title="Painel"{% if path == '/' %} aria-current="page"{% endif %}><span class="nav__icon" aria-hidden="true">🏠</span><span class="nav__label">Painel</span></a>
+    <a class="nav__item" href="/caixa-entrada" title="Caixa de entrada"{% if path.startswith('/caixa-entrada') %} aria-current="page"{% endif %}><span class="nav__icon" aria-hidden="true">📥</span><span class="nav__label">Caixa de entrada</span></a>
 
     <p class="nav__section">Vender</p>
     <a class="nav__item" href="/publicar" title="Publicar"{% if path == '/publicar' %} aria-current="page"{% endif %}><span class="nav__icon" aria-hidden="true">➕</span><span class="nav__label">Publicar</span></a>
