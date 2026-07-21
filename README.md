@@ -331,20 +331,21 @@ curl -X POST \
 
 ### 🚧 Próximas melhorias (em execução)
 
-- [ ] Busca e filtro na lista de anúncios (por título e status)
-- [ ] Duplicar anúncio abrindo direto na tela de edição
-- [ ] Feedback visual ao enviar mensagens/respostas
-- [ ] Tendências filtráveis por categoria do vendedor
-- [ ] Recomendação de preço (sugestão do ML + concorrência)
-- [ ] Histórico de preço e vendas (snapshots diários + gráfico)
-- [ ] Perguntas em massa (responder várias de uma vez)
-- [ ] Sugestão automática de resposta a partir da pergunta
-- [ ] Indicador de Full / Mercado Envios nos anúncios
-- [ ] Promoções e descontos (`/seller-promotions`)
-- [ ] Exportar relatórios (CSV) de vendas e lucratividade
-- [ ] Renovação automática do token (refresh proativo)
-- [ ] Paginação de anúncios e vendas
-- [ ] Agendamento de ações (pausar/reativar/promoções programadas)
+- [x] Busca e filtro na lista de anúncios (por título e status)
+- [x] Duplicar anúncio abrindo direto na tela de edição
+- [x] Feedback visual ao enviar mensagens/respostas
+- [x] Tendências filtráveis por categoria do vendedor (e por texto livre)
+- [x] Recomendação de preço (sugestão do ML + concorrência)
+- [x] Histórico de preço e vendas (snapshots diários + gráfico)
+- [x] Perguntas em massa (responder várias de uma vez)
+- [x] Sugestão automática de resposta a partir da pergunta
+- [x] Indicador de Full / Mercado Envios nos anúncios
+- [x] Promoções e descontos (`/seller-promotions`)
+- [x] Exportar relatórios (CSV) de vendas e lucratividade
+- [x] Renovação automática do token (refresh proativo)
+- [x] Paginação de anúncios e vendas
+- [x] Agendamento de ações (pausar/reativar/preço programados)
+- [x] Cache local configurável (painel e tendências) com “Atualizar agora”
 
 ---
 

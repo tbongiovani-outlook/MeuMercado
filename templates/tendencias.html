@@ -34,6 +34,13 @@
 <p class="muted">Mostrando tendências de <strong>{{ categoria_nome }}</strong>.</p>
 {% endif %}
 
+{% if cache_em %}
+<p class="cache-info">
+    <span class="muted">Dados de {{ cache_em | datetimebr }}</span>
+    <a class="btn btn--ghost btn--sm" href="/tendencias?atualizar=1&categoria={{ categoria or '' }}&termo={{ termo or '' }}">Atualizar agora</a>
+</p>
+{% endif %}
+
 <section class="card">
     {% if trends %}
     <ol class="trends">

@@ -312,6 +312,14 @@ h2 { margin-top: 0; font-size: 1.05rem; }
 }
 .check-inline { display: inline-flex; align-items: baseline; gap: 0.4rem; }
 
+.cache-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin: 0 0 1rem;
+}
+
 .barchart {
     display: flex;
     align-items: flex-end;

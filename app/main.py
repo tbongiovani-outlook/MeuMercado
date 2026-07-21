@@ -13,7 +13,9 @@ from datetime import datetime, timedelta, timezone
 import asyncio
 import csv
 import io
+import json
 import re
+import time
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import RedirectResponse, Response
@@ -52,8 +54,7 @@ async def _scheduler_loop():
 
 def _run_due_tasks() -> None:
     """Executa as ações agendadas cujo horário já chegou (best-effort)."""
-    import time as _time
-    for tarefa in database.due_tasks(int(_time.time())):
+    for tarefa in database.due_tasks(int(time.time())):
         try:
             _executar_tarefa(tarefa)
             database.finish_task(tarefa["id"], "concluida", "ok")
@@ -91,6 +92,34 @@ def _datetimebr(epoch: int | None) -> str:
 
 
 templates.env.filters["datetimebr"] = _datetimebr
+
+
+def _cache_ttl_segundos() -> int:
+    """Validade do cache (em segundos), configurável em /configuracao."""
+    try:
+        return max(0, int(database.get_config("cache_ttl_min") or 15)) * 60
+    except (TypeError, ValueError):
+        return 15 * 60
+
+
+def _cache_ler(chave: str, force: bool = False):
+    """Retorna (dados, atualizado_em) se houver cache válido; senão None."""
+    if force:
+        return None
+    row = database.cache_get(chave)
+    if not row:
+        return None
+    if time.time() - row["atualizado_em"] > _cache_ttl_segundos():
+        return None
+    try:
+        return json.loads(row["valor"]), row["atualizado_em"]
+    except (ValueError, TypeError):
+        return None
+
+
+def _cache_gravar(chave: str, dados) -> int:
+    """Grava os dados no cache e retorna o timestamp."""
+    return database.cache_set(chave, json.dumps(dados, default=str))
 
 # Instrumenta a aplicação com OpenTelemetry.
 telemetry.setup_telemetry(app)
@@ -292,7 +321,7 @@ def _dashboard_metrics(ml_user: dict) -> dict:
 # Painel principal
 # ---------------------------------------------------------------------------
 @app.get("/")
-def home(request: Request):
+def home(request: Request, atualizar: int = 0):
     if not database.has_user():
         return _redirect("/criar-conta")
     if not _current_user_id(request):
@@ -307,6 +336,7 @@ def home(request: Request):
         "orders": [],
         "kpis": None,
         "acoes": [],
+        "cache_em": None,
         "error": request.session.pop("flash", None),
     }
 
@@ -317,13 +347,20 @@ def home(request: Request):
             context["error"] = f"Não foi possível ler os dados da conta: {exc}"
 
         if context["ml_user"]:
-            dados = _dashboard_metrics(context["ml_user"])
+            chave = f"dashboard:{context['ml_user']['id']}"
+            cached = _cache_ler(chave, force=bool(atualizar))
+            if cached:
+                dados, quando = cached
+                context["cache_em"] = quando
+            else:
+                dados = _dashboard_metrics(context["ml_user"])
+                context["cache_em"] = _cache_gravar(chave, dados)
+                _registrar_snapshot(dados["kpis"])
             context["kpis"] = dados["kpis"]
             context["acoes"] = dados["acoes"]
             context["orders"] = dados["orders"]
             if dados["avisos"] and not context["error"]:
                 context["error"] = " · ".join(dados["avisos"])
-            _registrar_snapshot(dados["kpis"])
 
     return templates.TemplateResponse(request, "dashboard.html", context)
 
@@ -426,6 +463,7 @@ def configuracao_form(request: Request):
         "has_secret": bool(meli.get_client_secret()),
         "redirect_uri": meli.get_redirect_uri(),
         "estoque_baixo": _limite_estoque_baixo(),
+        "cache_ttl_min": int(database.get_config("cache_ttl_min") or 15),
     }
     return templates.TemplateResponse(request, "configuracao.html", context)
 
@@ -437,6 +475,7 @@ def configuracao_save(
     client_secret: str = Form(""),
     redirect_uri: str = Form(""),
     estoque_baixo: int = Form(3),
+    cache_ttl_min: int = Form(15),
 ):
     if not _current_user_id(request):
         return _redirect("/entrar")
@@ -444,6 +483,7 @@ def configuracao_save(
     database.set_config("meli_client_id", client_id.strip())
     database.set_config("meli_redirect_uri", redirect_uri.strip())
     database.set_config("estoque_baixo", str(max(0, estoque_baixo)))
+    database.set_config("cache_ttl_min", str(max(0, cache_ttl_min)))
     # Só sobrescreve o secret se o usuário digitou um novo (mantém o atual se vazio).
     if client_secret.strip():
         database.set_config("meli_client_secret", client_secret.strip())
@@ -455,6 +495,7 @@ def configuracao_save(
         "has_secret": bool(meli.get_client_secret()),
         "redirect_uri": meli.get_redirect_uri(),
         "estoque_baixo": _limite_estoque_baixo(),
+        "cache_ttl_min": int(database.get_config("cache_ttl_min") or 15),
     }
     return templates.TemplateResponse(request, "configuracao.html", context)
 
@@ -1242,19 +1283,27 @@ def exportar_lucratividade(request: Request):
 # Tendências (palavras-chave em alta)
 # ---------------------------------------------------------------------------
 @app.get("/tendencias")
-def tendencias(request: Request, categoria: str = "", termo: str = ""):
+def tendencias(request: Request, categoria: str = "", termo: str = "", atualizar: int = 0):
     redirect, _ = _require_ready(request)
     if redirect:
         return redirect
     ctx = _base_context(request)
-    trends, categorias, categoria_nome = [], [], ""
+    trends, categorias, categoria_nome, cache_em = [], [], "", None
     termo = termo.strip()
+    force = bool(atualizar)
     try:
         me = meli.get_me()
-        ids = meli.list_all_item_ids(me["id"])
-        items = meli.get_items_details(ids)
-        cat_ids = sorted({it.get("category_id") for it in items if it.get("category_id")})
-        categorias = [{"id": c, "nome": meli.get_category_name(c)} for c in cat_ids]
+        uid = me["id"]
+        chave_cat = f"tend_categorias:{uid}"
+        cached_cat = _cache_ler(chave_cat, force=force)
+        if cached_cat:
+            categorias, quando_cat = cached_cat
+        else:
+            ids = meli.list_all_item_ids(uid)
+            items = meli.get_items_details(ids)
+            cat_ids = sorted({it.get("category_id") for it in items if it.get("category_id")})
+            categorias = [{"id": c, "nome": meli.get_category_name(c)} for c in cat_ids]
+            quando_cat = _cache_gravar(chave_cat, categorias)
 
         if termo:
             previsao = meli.predict_category(termo)
@@ -1265,7 +1314,14 @@ def tendencias(request: Request, categoria: str = "", termo: str = ""):
         elif categoria:
             categoria_nome = meli.get_category_name(categoria)
 
-        trends = meli.get_trends(categoria)
+        chave_tr = f"tend_trends:{categoria}"
+        cached_tr = _cache_ler(chave_tr, force=force)
+        if cached_tr:
+            trends, quando_tr = cached_tr
+        else:
+            trends = meli.get_trends(categoria)
+            quando_tr = _cache_gravar(chave_tr, trends)
+        cache_em = min(quando_cat, quando_tr)
     except Exception as exc:  # noqa: BLE001
         ctx["error"] = f"Não foi possível carregar as tendências: {exc}"
     ctx.update({
@@ -1274,6 +1330,7 @@ def tendencias(request: Request, categoria: str = "", termo: str = ""):
         "categoria": categoria,
         "categoria_nome": categoria_nome,
         "termo": termo,
+        "cache_em": cache_em,
     })
     return templates.TemplateResponse(request, "tendencias.html", ctx)
 

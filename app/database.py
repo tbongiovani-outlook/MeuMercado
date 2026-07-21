@@ -96,6 +96,15 @@ def init_db() -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS cache (
+                chave         TEXT PRIMARY KEY,
+                valor         TEXT NOT NULL,
+                atualizado_em INTEGER NOT NULL
+            )
+            """
+        )
 
 
 def save_token(
@@ -301,3 +310,28 @@ def cancel_task(task_id: int) -> None:
             "UPDATE scheduled_tasks SET status = 'cancelada' WHERE id = ? AND status = 'pendente'",
             (task_id,),
         )
+
+
+def cache_get(chave: str) -> Optional[dict]:
+    """Retorna {'valor': <str json>, 'atualizado_em': <int>} ou None."""
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT valor, atualizado_em FROM cache WHERE chave = ?", (chave,)
+        ).fetchone()
+        return dict(row) if row else None
+
+
+def cache_set(chave: str, valor: str) -> int:
+    """Grava/atualiza um item de cache. Retorna o timestamp gravado."""
+    agora = int(time.time())
+    with get_conn() as conn:
+        conn.execute(
+            """
+            INSERT INTO cache (chave, valor, atualizado_em) VALUES (?, ?, ?)
+            ON CONFLICT(chave) DO UPDATE SET
+                valor = excluded.valor,
+                atualizado_em = excluded.atualizado_em
+            """,
+            (chave, valor, agora),
+        )
+    return agora

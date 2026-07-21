@@ -58,6 +58,12 @@
 {% endif %}
 
 <h2 class="section-title">Resumo (últimos 30 dias)</h2>
+{% if cache_em %}
+<p class="cache-info">
+    <span class="muted">Dados de {{ cache_em | datetimebr }}</span>
+    <a class="btn btn--ghost btn--sm" href="/?atualizar=1">Atualizar agora</a>
+</p>
+{% endif %}
 <div class="kpis">
     <a class="kpi" href="/anuncios">
         <span class="kpi__label">Anúncios ativos</span>

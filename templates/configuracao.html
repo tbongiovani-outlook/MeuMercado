@@ -45,6 +45,12 @@
             <input type="number" min="0" name="estoque_baixo" value="{{ estoque_baixo if estoque_baixo is not none else 3 }}">
             <small class="muted">O painel avisa quando um anúncio ativo tiver estoque igual ou abaixo deste valor.</small>
         </label>
+        <label class="field">
+            <span>Validade do cache (minutos)</span>
+            <input type="number" min="0" name="cache_ttl_min" value="{{ cache_ttl_min if cache_ttl_min is not none else 15 }}">
+            <small class="muted">Painel e Tendências reutilizam dados salvos por este tempo para carregar mais rápido.
+                Use 0 para sempre buscar online. Você também pode clicar em “Atualizar agora” nas telas.</small>
+        </label>
         <button class="btn btn--primary" type="submit">Salvar configuração</button>
     </form>
 </section>
