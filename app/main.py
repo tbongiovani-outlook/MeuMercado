@@ -121,6 +121,15 @@ def _cache_gravar(chave: str, dados) -> int:
     """Grava os dados no cache e retorna o timestamp."""
     return database.cache_set(chave, json.dumps(dados, default=str))
 
+
+def _me_cached(force: bool = False):
+    """Dados da conta (/users/me) com cache — evita 1 chamada por página."""
+    cached = _cache_ler("me", force=force)
+    if cached:
+        return cached[0], cached[1]
+    me = meli.api_get("/users/me")
+    return me, _cache_gravar("me", me)
+
 # Instrumenta a aplicação com OpenTelemetry.
 telemetry.setup_telemetry(app)
 
@@ -342,7 +351,7 @@ def home(request: Request, atualizar: int = 0):
 
     if context["configured"] and context["connected"]:
         try:
-            context["ml_user"] = meli.api_get("/users/me")
+            context["ml_user"], _ = _me_cached(force=bool(atualizar))
         except Exception as exc:  # noqa: BLE001
             context["error"] = f"Não foi possível ler os dados da conta: {exc}"
 
@@ -1292,7 +1301,7 @@ def tendencias(request: Request, categoria: str = "", termo: str = "", atualizar
     termo = termo.strip()
     force = bool(atualizar)
     try:
-        me = meli.get_me()
+        me, _ = _me_cached(force=force)
         uid = me["id"]
         chave_cat = f"tend_categorias:{uid}"
         cached_cat = _cache_ler(chave_cat, force=force)
