@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meu Mercado — retorno da autorização</title>
+  <style>
+    body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+           background: #f4f6f8; color: #1a1a1a; display: flex;
+           min-height: 100vh; align-items: center; justify-content: center; margin: 0; }
+    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+            padding: 2rem; max-width: 460px; text-align: center;
+            box-shadow: 0 2px 12px rgba(0,0,0,.05); }
+    h1 { color: #2d3277; font-size: 1.2rem; }
+    .muted { color: #6b7280; font-size: .95rem; }
+    a.btn { display: inline-block; margin-top: 1rem; padding: .6rem 1.1rem;
+            background: #ffe600; color: #2d3277; font-weight: 600;
+            border-radius: 8px; text-decoration: none; }
+    code { background: #f4f6f8; padding: .1rem .35rem; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🛒 Meu Mercado</h1>
+    <p id="msg" class="muted">Concluindo a conexão com o Mercado Livre…</p>
+    <p id="fallback" class="muted" style="display:none">
+      Se você não for redirecionado automaticamente, verifique se o aplicativo
+      <strong>Meu Mercado</strong> está aberto na sua máquina e clique abaixo:
+    </p>
+    <a id="link" class="btn" style="display:none" href="#">Voltar ao aplicativo</a>
+  </div>
+
+  <script>
+    // Porta padrão em que o aplicativo local (FastAPI) escuta.
+    var LOCAL_PORT = 8000;
+
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var target = "http://127.0.0.1:" + LOCAL_PORT + "/callback";
+      var qs = window.location.search || "";
+
+      // Repassa exatamente code/state/error para o aplicativo local.
+      var dest = target + qs;
+
+      var link = document.getElementById("link");
+      link.href = dest;
+      link.style.display = "inline-block";
+      document.getElementById("fallback").style.display = "block";
+
+      // Redireciona automaticamente (navegação de topo https -> localhost é permitida).
+      window.location.replace(dest);
+    })();
+  </script>
+</body>
+</html>

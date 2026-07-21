@@ -38,7 +38,12 @@
         <label class="field">
             <span>URL de redirecionamento (redirect_uri)</span>
             <input type="text" name="redirect_uri" value="{{ redirect_uri or '' }}" required>
-            <small class="muted">Deve ser HTTPS e idêntica à cadastrada no DevCenter (ex.: túnel ngrok).</small>
+            <small class="muted">
+                Esta é a <strong>página-ponte</strong> (a mesma para todos). Copie exatamente este
+                endereço e cadastre em <em>URLs de redirecionamento</em> na sua aplicação do
+                <a href="https://developers.mercadolivre.com.br/devcenter" target="_blank" rel="noopener">DevCenter</a>.
+                Normalmente você não precisa alterar.
+            </small>
         </label>
         <button class="btn btn--primary" type="submit">Salvar configuração</button>
     </form>

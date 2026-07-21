@@ -1,5 +1,8 @@
-"""Cliente de integração com a API do Mercado Livre (OAuth 2.0 + chamadas REST)."""
+"""Cliente de integração com a API do Mercado Livre (OAuth 2.0 + PKCE + REST)."""
 
+import base64
+import hashlib
+import secrets
 import time
 from urllib.parse import urlencode
 
@@ -11,6 +14,14 @@ from .config import settings
 _TIMEOUT = 30
 # Renova o token com esta antecedência (segundos) antes de expirar.
 _REFRESH_MARGIN = 60
+
+
+def generate_pkce_pair() -> tuple[str, str]:
+    """Gera (code_verifier, code_challenge) para o fluxo PKCE (método S256)."""
+    verifier = secrets.token_urlsafe(64)
+    digest = hashlib.sha256(verifier.encode("ascii")).digest()
+    challenge = base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
+    return verifier, challenge
 
 
 def get_client_id() -> str:
@@ -29,18 +40,20 @@ def is_configured() -> bool:
     return bool(get_client_id() and get_client_secret())
 
 
-def build_authorization_url(state: str) -> str:
+def build_authorization_url(state: str, code_challenge: str) -> str:
     """Monta a URL para redirecionar o vendedor ao consentimento do Mercado Livre."""
     params = {
         "response_type": "code",
         "client_id": get_client_id(),
         "redirect_uri": get_redirect_uri(),
         "state": state,
+        "code_challenge": code_challenge,
+        "code_challenge_method": "S256",
     }
     return f"{settings.meli_auth_domain}/authorization?{urlencode(params)}"
 
 
-def exchange_code(code: str) -> dict:
+def exchange_code(code: str, code_verifier: str) -> dict:
     """Troca o authorization code por um access token e persiste o resultado."""
     data = {
         "grant_type": "authorization_code",
@@ -48,6 +61,7 @@ def exchange_code(code: str) -> dict:
         "client_secret": get_client_secret(),
         "code": code,
         "redirect_uri": get_redirect_uri(),
+        "code_verifier": code_verifier,
     }
     token = _post_token(data)
     _persist(token)

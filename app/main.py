@@ -198,8 +198,10 @@ def ml_conectar(request: Request):
     if not meli.is_configured():
         return _redirect("/configuracao")
     state = secrets.token_urlsafe(24)
+    verifier, challenge = meli.generate_pkce_pair()
     request.session["oauth_state"] = state
-    return RedirectResponse(meli.build_authorization_url(state))
+    request.session["pkce_verifier"] = verifier
+    return RedirectResponse(meli.build_authorization_url(state, challenge))
 
 
 @app.get("/callback")
@@ -224,13 +226,19 @@ def callback(
     if not code:
         return _redirect("/")
 
+    verifier = request.session.get("pkce_verifier")
+    if not verifier:
+        request.session["flash"] = "Sessão de autorização expirada. Tente conectar novamente."
+        return _redirect("/")
+
     try:
-        meli.exchange_code(code)
+        meli.exchange_code(code, verifier)
     except Exception as exc:  # noqa: BLE001
         request.session["flash"] = f"Falha ao conectar ao Mercado Livre: {exc}"
         return _redirect("/")
 
     request.session.pop("oauth_state", None)
+    request.session.pop("pkce_verifier", None)
     return _redirect("/")
 
 

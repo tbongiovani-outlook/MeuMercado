@@ -117,34 +117,62 @@ O aplicativo abre em **http://127.0.0.1:8000**.
 
 ---
 
+## 🌉 Como funciona o login do Mercado Livre em um app local (arquitetura)
+
+O Mercado Livre exige que o `redirect_uri` do OAuth seja **HTTPS e fixo**. Como o app
+roda em `http://localhost` na máquina do usuário, usamos uma **página-ponte** para
+resolver isso **sem túnel, sem VS Code e sem certificado**:
+
+```mermaid
+flowchart LR
+    A[App local<br/>127.0.0.1:8000] -->|1. abre navegador| B[Mercado Livre<br/>autorização]
+    B -->|2. redireciona com code| C[Página-ponte HTTPS<br/>GitHub Pages]
+    C -->|3. devolve code p/ localhost| A
+    A -->|4. troca code+PKCE por token| D[API Mercado Livre]
+```
+
+- A **página-ponte** (`docs/callback.html`, publicada no GitHub Pages) é um endereço
+  HTTPS **fixo e igual para todos os usuários**. Ela só recebe o `code` e o devolve
+  para `http://127.0.0.1:8000/callback` na máquina do usuário.
+- O app local troca o `code` pelo token usando **PKCE** (`code_challenge`/`code_verifier`),
+  então um `code` interceptado é inútil sem o `code_verifier`, que nunca sai da máquina.
+- O **Client Secret e os tokens ficam apenas na máquina do usuário** (a ponte nunca os vê).
+
+**URL da ponte (redirect_uri):** `https://tbongiovani-outlook.github.io/MeuMercado/callback.html`
+
+> Publicação da ponte (uma vez): no GitHub, **Settings → Pages → Source: Deploy from a branch → `main` / `/docs`**.
+
+---
+
 ## 🔌 Como integrar com o Mercado Livre
 
-A integração usa **OAuth 2.0 — Authorization Code Grant (Server Side)**. O Mercado Livre cuida do login do vendedor; nós recebemos um `code` e o trocamos por um `access_token`.
+A integração usa **OAuth 2.0 — Authorization Code + PKCE**. O Mercado Livre cuida do login do vendedor; nós recebemos um `code` e o trocamos por um `access_token`.
 
 ### Passo 1 — Criar a aplicação no DevCenter
 
 1. Acesse o [DevCenter](https://developers.mercadolivre.com.br/devcenter) e clique em **Criar uma aplicação**.
-2. Preencha nome, descrição e **URL de redirecionamento (redirect_uri)** — deve ser **HTTPS** e idêntica à usada no código.
-   - Para desenvolvimento local, o Mercado Livre exige HTTPS. Use um túnel (ex.: [ngrok](https://ngrok.com/)) apontando para `http://localhost:8000/callback`, ou configure HTTPS local.
+2. Em **URLs de redirecionamento (redirect_uri)**, cadastre **exatamente** a URL da página-ponte:
+   `https://tbongiovani-outlook.github.io/MeuMercado/callback.html`
 3. Selecione os **escopos**: `read`, `write` e `offline_access` (para renovar o token sem novo login).
-4. (Opcional, recomendado) Ative o **PKCE** para maior segurança.
+4. **Ative o PKCE** (o app já envia `code_challenge`/`code_verifier`).
 5. Configure os **tópicos de notificação** (webhooks): `orders`, `items`, `messages`, `shipments`, `questions`, `claims`.
-6. Guarde o **`client_id` (App ID)** e o **`client_secret` (Secret Key)**.
+6. Guarde o **`client_id` (App ID)** e o **`client_secret` (Secret Key)** — informe-os na tela **Configuração** do app.
 
 📄 Docs: [Crie uma aplicação no Mercado Livre](https://developers.mercadolivre.com.br/pt_br/crie-uma-aplicacao-no-mercado-livre)
 
 ### Passo 2 — Obter autorização do vendedor
 
-Redirecione o usuário para a URL de autorização (domínio `.com.br` para o Brasil):
+O app redireciona o vendedor para a URL de autorização (com PKCE):
 
 ```
-https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=$APP_ID&redirect_uri=$REDIRECT_URI&state=$RANDOM_ID
+https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=$APP_ID&redirect_uri=$REDIRECT_URI&state=$RANDOM_ID&code_challenge=$CHALLENGE&code_challenge_method=S256
 ```
 
-Após o login e a autorização, o Mercado Livre redireciona para:
+Após o login, o Mercado Livre redireciona para a **página-ponte**, que devolve para o app local:
 
 ```
-https://SEU_REDIRECT_URI?code=$AUTHORIZATION_CODE&state=$RANDOM_ID
+https://.../callback.html?code=$AUTHORIZATION_CODE&state=$RANDOM_ID
+   →  http://127.0.0.1:8000/callback?code=$AUTHORIZATION_CODE&state=$RANDOM_ID
 ```
 
 > Use o parâmetro `state` (valor aleatório único) para validar a resposta e prevenir CSRF.

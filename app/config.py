@@ -11,7 +11,11 @@ class Settings(BaseSettings):
     # Credenciais da aplicação no Mercado Livre (DevCenter)
     meli_client_id: str = ""
     meli_client_secret: str = ""
-    meli_redirect_uri: str = "https://localhost:8000/callback"
+    # Página-ponte HTTPS (GitHub Pages) que devolve o code para o app local.
+    # É a MESMA URL para todos os usuários; basta cadastrá-la no DevCenter.
+    meli_redirect_uri: str = (
+        "https://tbongiovani-outlook.github.io/MeuMercado/callback.html"
+    )
 
     # Endpoints
     meli_auth_domain: str = "https://auth.mercadolivre.com.br"
