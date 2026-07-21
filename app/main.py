@@ -59,6 +59,14 @@ def _order_dt(order: dict) -> datetime | None:
         return None
 
 
+def _limite_estoque_baixo() -> int:
+    valor = database.get_config("estoque_baixo")
+    try:
+        return int(valor) if valor is not None else 3
+    except (TypeError, ValueError):
+        return 3
+
+
 def _trend(atual: float, anterior: float) -> dict:
     """Compara o valor atual com o do período anterior."""
     if anterior <= 0:
@@ -146,6 +154,7 @@ def _dashboard_metrics(ml_user: dict) -> dict:
         "vendas_30d": 0, "faturamento_30d": 0.0, "comissoes_30d": 0.0,
         "liquido_30d": 0.0, "ticket_medio": 0.0, "acima_concorrencia": 0,
         "perguntas_pendentes": 0, "reclamacoes_abertas": 0,
+        "estoque_baixo": 0, "limite_estoque": 3,
         "trend_vendas": None, "trend_faturamento": None, "vendas_por_dia": [],
         "mais_vendido": None, "menos_vendido": None,
         "reputacao": (ml_user.get("seller_reputation") or {}).get("level_id"),
@@ -162,6 +171,13 @@ def _dashboard_metrics(ml_user: dict) -> dict:
         kpis["sem_estoque"] = sum(
             1 for d in detalhes
             if d.get("status") == "active" and (d.get("available_quantity") or 0) == 0
+        )
+        limite = _limite_estoque_baixo()
+        kpis["limite_estoque"] = limite
+        kpis["estoque_baixo"] = sum(
+            1 for d in detalhes
+            if d.get("status") == "active"
+            and 0 < (d.get("available_quantity") or 0) <= limite
         )
         kpis["acima_concorrencia"] = _count_acima_concorrencia(detalhes)
         kpis["mais_vendido"], kpis["menos_vendido"] = _destaques_ativos(detalhes)
@@ -206,6 +222,10 @@ def _dashboard_metrics(ml_user: dict) -> dict:
     if kpis["sem_estoque"]:
         acoes.append({"tipo": "warn", "link": "/anuncios",
                       "texto": f"{kpis['sem_estoque']} anúncio(s) ativo(s) sem estoque"})
+    if kpis["estoque_baixo"]:
+        acoes.append({"tipo": "warn", "link": "/anuncios",
+                      "texto": f"{kpis['estoque_baixo']} anúncio(s) com estoque baixo "
+                               f"(≤ {kpis['limite_estoque']})"})
     if kpis["acima_concorrencia"]:
         acoes.append({"tipo": "warn", "link": "/anuncios",
                       "texto": f"{kpis['acima_concorrencia']} anúncio(s) com preço acima da concorrência"})
@@ -332,6 +352,7 @@ def configuracao_form(request: Request):
         "client_id": meli.get_client_id(),
         "has_secret": bool(meli.get_client_secret()),
         "redirect_uri": meli.get_redirect_uri(),
+        "estoque_baixo": _limite_estoque_baixo(),
     }
     return templates.TemplateResponse(request, "configuracao.html", context)
 
@@ -342,12 +363,14 @@ def configuracao_save(
     client_id: str = Form(""),
     client_secret: str = Form(""),
     redirect_uri: str = Form(""),
+    estoque_baixo: int = Form(3),
 ):
     if not _current_user_id(request):
         return _redirect("/entrar")
 
     database.set_config("meli_client_id", client_id.strip())
     database.set_config("meli_redirect_uri", redirect_uri.strip())
+    database.set_config("estoque_baixo", str(max(0, estoque_baixo)))
     # Só sobrescreve o secret se o usuário digitou um novo (mantém o atual se vazio).
     if client_secret.strip():
         database.set_config("meli_client_secret", client_secret.strip())
@@ -358,6 +381,7 @@ def configuracao_save(
         "client_id": meli.get_client_id(),
         "has_secret": bool(meli.get_client_secret()),
         "redirect_uri": meli.get_redirect_uri(),
+        "estoque_baixo": _limite_estoque_baixo(),
     }
     return templates.TemplateResponse(request, "configuracao.html", context)
 

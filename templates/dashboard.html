@@ -107,6 +107,11 @@
         <span class="kpi__value">{{ kpis.sem_estoque }}</span>
         <span class="kpi__hint">anúncios ativos zerados</span>
     </a>
+    <a class="kpi {% if kpis.estoque_baixo %}kpi--warn{% endif %}" href="/anuncios">
+        <span class="kpi__label">Estoque baixo</span>
+        <span class="kpi__value">{{ kpis.estoque_baixo }}</span>
+        <span class="kpi__hint">≤ {{ kpis.limite_estoque }} unidades</span>
+    </a>
     <a class="kpi {% if kpis.acima_concorrencia %}kpi--warn{% endif %}" href="/anuncios">
         <span class="kpi__label">Preço acima da concorrência</span>
         <span class="kpi__value">{{ kpis.acima_concorrencia }}</span>
