@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Lucratividade · Meu Mercado{% endblock %}
+{% block nav %}{% include "_nav.html" %}{% endblock %}
+
+{% block content %}
+<h1>Lucratividade</h1>
+<p class="muted">Receita, comissões do Mercado Livre e valor líquido por venda.</p>
+
+{% if error %}<div class="alert alert--error">{{ error }}</div>{% endif %}
+
+<div class="grid">
+    <section class="card card--center">
+        <h2>Receita bruta</h2>
+        <p><strong>R$ {{ '%.2f'|format(totais.bruto) }}</strong></p>
+    </section>
+    <section class="card card--center">
+        <h2>Comissões ML</h2>
+        <p><strong>R$ {{ '%.2f'|format(totais.comissao) }}</strong></p>
+    </section>
+    <section class="card card--center">
+        <h2>Líquido</h2>
+        <p><strong>R$ {{ '%.2f'|format(totais.liquido) }}</strong></p>
+    </section>
+</div>
+
+<section class="card">
+    {% if linhas %}
+    <table class="table">
+        <thead>
+            <tr><th>Pedido</th><th>Data</th><th>Bruto</th><th>Comissão</th><th>Líquido</th></tr>
+        </thead>
+        <tbody>
+            {% for l in linhas %}
+            <tr>
+                <td><code>{{ l.id }}</code></td>
+                <td>{{ l.data }}</td>
+                <td>R$ {{ '%.2f'|format(l.bruto) }}</td>
+                <td>R$ {{ '%.2f'|format(l.comissao) }}</td>
+                <td>R$ {{ '%.2f'|format(l.liquido) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted">Sem vendas para calcular a lucratividade.</p>
+    {% endif %}
+</section>
+{% endblock %}

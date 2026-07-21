@@ -350,9 +350,11 @@ def get_pack_messages(pack_id: int, user_id: int) -> dict:
     return api_get(f"/messages/packs/{pack_id}/sellers/{user_id}")
 
 
-def search_claims(limit: int = 20) -> dict:
-    """Reclamações do vendedor (pós-venda)."""
-    return api_get("/post-purchase/v1/claims/search", {"limit": limit})
+def search_claims(limit: int = 20, status: str = "opened") -> dict:
+    """Reclamações do vendedor (pós-venda). Exige ao menos um filtro."""
+    return api_get(
+        "/post-purchase/v1/claims/search", {"status": status, "limit": limit}
+    )
 
 
 def get_item_visits(item_id: str) -> dict:

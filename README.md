@@ -307,11 +307,14 @@ curl -X POST \
 - [x] Tela de configuração do Client ID / Secret (armazenamento local)
 - [x] Scripts de inicialização para Windows e macOS (`iniciar.bat` / `iniciar.ps1` / `iniciar.sh`)
 - [x] Implementar o fluxo OAuth (conectar → callback → armazenar tokens)
-- [ ] Tela de anúncios (histórico + publicação)
-- [ ] Tela de vendas e entregas
-- [ ] ⭐ **Diferencial:** painel pós-venda unificado (mensagens + perguntas + reclamações)
-- [ ] ⭐ **Diferencial:** lucratividade real (API de faturamento/comissões)
-- [ ] Painel de estatísticas
+- [x] Observabilidade (logging em arquivo + OpenTelemetry)
+- [x] Tela de anúncios (histórico + publicação com previsão de categoria e catálogo)
+- [x] Tela de vendas e entregas
+- [x] ⭐ **Diferencial:** painel pós-venda unificado (perguntas + reclamações)
+- [x] ⭐ **Diferencial:** lucratividade real (comissões das vendas)
+- [x] Painel de estatísticas
+- [ ] Mensagens pós-venda por pedido (função pronta; falta a interface)
+- [ ] Responder perguntas/reclamações direto pelo painel
 
 ---
 

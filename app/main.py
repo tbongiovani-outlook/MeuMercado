@@ -495,3 +495,43 @@ def estatisticas(request: Request):
     ctx["linhas"] = linhas
     return templates.TemplateResponse(request, "estatisticas.html", ctx)
 
+
+# ---------------------------------------------------------------------------
+# Lucratividade (comissões reais das vendas)
+# ---------------------------------------------------------------------------
+@app.get("/lucratividade")
+def lucratividade(request: Request):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    ctx = _base_context(request)
+    linhas = []
+    totais = {"bruto": 0.0, "comissao": 0.0, "liquido": 0.0}
+    try:
+        me = meli.get_me()
+        orders = meli.search_orders(me["id"], limit=50)
+        for order in orders:
+            bruto = float(order.get("total_amount") or 0)
+            comissao = sum(
+                float(item.get("sale_fee") or 0)
+                for item in order.get("order_items", [])
+            )
+            liquido = bruto - comissao
+            totais["bruto"] += bruto
+            totais["comissao"] += comissao
+            totais["liquido"] += liquido
+            linhas.append(
+                {
+                    "id": order.get("id"),
+                    "data": (order.get("date_created") or "")[:10],
+                    "bruto": bruto,
+                    "comissao": comissao,
+                    "liquido": liquido,
+                }
+            )
+    except Exception as exc:  # noqa: BLE001
+        ctx["error"] = f"Não foi possível carregar a lucratividade: {exc}"
+    ctx["linhas"] = linhas
+    ctx["totais"] = totais
+    return templates.TemplateResponse(request, "lucratividade.html", ctx)
+
