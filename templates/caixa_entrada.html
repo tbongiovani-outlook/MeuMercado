@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Caixa de entrada · Meu Mercado{% endblock %}
+{% block nav %}{% include "_nav.html" %}{% endblock %}
+
+{% block hero %}
+<header class="page-header">
+    <div>
+        <h1 class="page-header__title">Caixa de entrada</h1>
+        <p class="page-header__sub">Tudo que precisa da sua ação hoje, reunido em um só lugar.</p>
+    </div>
+    <div class="page-header__actions">
+        <a class="btn btn--ghost btn--sm" href="/caixa-entrada">↻ Atualizar</a>
+    </div>
+</header>
+{% endblock %}
+
+{% block content %}
+{% if flash %}<div class="alert alert--ok" role="status">{{ flash }}</div>{% endif %}
+{% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
+
+{% if total == 0 and not error %}
+<section class="empty">
+    <div class="empty__icon" aria-hidden="true">✅</div>
+    <h2 class="empty__title">Tudo em dia!</h2>
+    <p>Nenhuma pergunta, reclamação, envio pendente ou estoque baixo no momento.</p>
+</section>
+{% else %}
+
+<p class="cache-info">
+    <span class="muted">
+        {{ perguntas|length }} pergunta(s) · {{ reclamacoes|length }} reclamação(ões) ·
+        {{ a_enviar|length }} a enviar · {{ estoque|length }} de estoque
+    </span>
+</p>
+
+<!-- Perguntas -->
+<section class="card">
+    <h2><span class="ico" aria-hidden="true">💬</span> Perguntas sem resposta <span class="badge">{{ perguntas|length }}</span></h2>
+    {% if perguntas %}
+    <input type="search" class="list-filter" data-target="#ce-perguntas"
+           placeholder="Filtrar perguntas…" aria-label="Filtrar perguntas">
+    <ul class="list" id="ce-perguntas">
+        {% for q in perguntas %}
+        <li>
+            <strong>{{ q.text }}</strong><br>
+            <small class="muted">item {{ q.item_id }} · {{ (q.date_created or '')[:10] }}</small>
+            <form class="reply" method="post" action="/caixa-entrada/responder">
+                <input type="hidden" name="question_id" value="{{ q.id }}">
+                {% if respostas %}
+                <select class="reply__tpl" aria-label="Usar resposta rápida">
+                    <option value="">Resposta rápida…</option>
+                    {% for r in respostas %}
+                    <option value="{{ r.texto }}">{{ r.titulo }}</option>
+                    {% endfor %}
+                </select>
+                {% endif %}
+                <input type="text" name="text" required maxlength="2000"
+                       value="{{ q.sugestao or '' }}" placeholder="Escreva a resposta…">
+                <button class="btn btn--primary btn--sm" type="submit">Responder</button>
+            </form>
+            {% if q.sugestao %}<small class="hint">💡 Sugestão preenchida — revise antes de enviar.</small>{% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">Nenhuma pergunta pendente.</p>
+    {% endif %}
+</section>
+
+<!-- Reclamações -->
+<section class="card">
+    <h2><span class="ico" aria-hidden="true">⚠️</span> Reclamações abertas <span class="badge">{{ reclamacoes|length }}</span></h2>
+    {% if reclamacoes %}
+    <ul class="list">
+        {% for c in reclamacoes %}
+        <li>
+            <strong>Reclamação {{ c.id }}</strong>
+            {% if c.status %}<span class="badge">{{ c.status }}</span>{% endif %}
+            {% if c.type %}<span class="badge">{{ c.type }}</span>{% endif %}
+            <br>
+            <a class="btn btn--ghost btn--sm" href="/pos-venda">Abrir no pós-venda</a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">Nenhuma reclamação aberta.</p>
+    {% endif %}
+</section>
+
+<!-- Pedidos a enviar -->
+<section class="card">
+    <h2><span class="ico" aria-hidden="true">📦</span> Pedidos a enviar <span class="badge">{{ a_enviar|length }}</span></h2>
+    {% if a_enviar %}
+    <input type="search" class="list-filter" data-target="#ce-enviar"
+           placeholder="Filtrar pedidos…" aria-label="Filtrar pedidos">
+    <ul class="list" id="ce-enviar">
+        {% for o in a_enviar %}
+        <li>
+            <strong>Pedido {{ o.id }}</strong>
+            {% if o.order_items and o.order_items[0].item %}— {{ o.order_items[0].item.title }}{% endif %}
+            <br>
+            <small class="muted">
+                {{ (o.date_created or '')[:10] }}
+                {% if o.buyer %}· {{ o.buyer.nickname }}{% endif %}
+                · R$ {{ '%.2f'|format(o.total_amount or 0) }}
+            </small>
+            <br>
+            <a class="btn btn--ghost btn--sm" href="/vendas/{{ o.id }}/mensagens">Falar com o comprador</a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">Nenhum pedido pago aguardando envio.</p>
+    {% endif %}
+</section>
+
+<!-- Estoque -->
+<section class="card">
+    <h2><span class="ico" aria-hidden="true">🏷️</span> Estoque para repor <span class="badge">{{ estoque|length }}</span></h2>
+    {% if estoque %}
+    <input type="search" class="list-filter" data-target="#ce-estoque"
+           placeholder="Filtrar anúncios…" aria-label="Filtrar anúncios">
+    <ul class="list" id="ce-estoque">
+        {% for it in estoque %}
+        <li>
+            <strong>{{ it.title }}</strong>
+            {% if it.nivel_estoque == 'sem' %}
+            <span class="nav__badge">sem estoque</span>
+            {% else %}
+            <span class="nav__badge nav__badge--ok">{{ it.available_quantity }} un.</span>
+            {% endif %}
+            <br>
+            <small class="muted">{{ it.id }}</small>
+            <br>
+            <a class="btn btn--ghost btn--sm" href="/anuncios/{{ it.id }}/editar">Repor estoque</a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">Nenhum anúncio com estoque baixo ou zerado.</p>
+    {% endif %}
+</section>
+
+{% endif %}
+{% endblock %}

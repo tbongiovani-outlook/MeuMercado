@@ -163,3 +163,81 @@ def test_anuncios_busca_status(auth_client):
 def test_home_atualizar(auth_client):
     r = auth_client.get("/?atualizar=1", follow_redirects=False)
     assert r.status_code == 200
+
+
+# --- Caixa de entrada unificada ------------------------------------------------
+
+
+def test_caixa_entrada_vazia(auth_client):
+    # Com os mocks padrão não há nada pendente -> "Tudo em dia".
+    r = auth_client.get("/caixa-entrada", follow_redirects=False)
+    assert r.status_code == 200
+    assert "Tudo em dia" in r.text
+
+
+def test_caixa_entrada_com_itens(auth_client, monkeypatch):
+    item_sem_estoque = dict(ITEM)
+    item_sem_estoque["available_quantity"] = 0
+    monkeypatch.setattr(meli, "get_items_details", lambda ids: [item_sem_estoque])
+    monkeypatch.setattr(
+        meli,
+        "search_questions",
+        lambda *a, **k: {
+            "questions": [
+                {"id": 1, "text": "Qual o frete?", "item_id": "MLB1", "date_created": "2026-07-20"}
+            ]
+        },
+    )
+    monkeypatch.setattr(
+        meli,
+        "search_claims",
+        lambda *a, **k: {"data": [{"id": "c1", "status": "opened", "type": "mediations"}]},
+    )
+    monkeypatch.setattr(
+        meli,
+        "search_orders",
+        lambda *a, **k: [
+            {
+                "id": "OID1",
+                "status": "paid",
+                "date_created": "2026-07-20T10:00:00",
+                "total_amount": 200.0,
+                "buyer": {"nickname": "Comprador"},
+                "order_items": [{"item": {"title": "Produto vendido"}}],
+            }
+        ],
+    )
+    r = auth_client.get("/caixa-entrada", follow_redirects=False)
+    assert r.status_code == 200
+    assert "Perguntas sem resposta" in r.text
+    assert "OID1" in r.text
+    assert "sem estoque" in r.text
+
+
+def test_caixa_entrada_responder(auth_client):
+    r = auth_client.post(
+        "/caixa-entrada/responder",
+        data={"question_id": 1, "text": "Frete grátis!"},
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    assert r.headers["location"] == "/caixa-entrada"
+
+
+def test_caixa_entrada_dados(temp_db, monkeypatch):
+    from tests.conftest import mock_meli
+
+    mock_meli(monkeypatch)
+    monkeypatch.setattr(
+        meli,
+        "search_orders",
+        lambda *a, **k: [{"id": "O1", "status": "paid"}, {"id": "O2", "status": "cancelled"}],
+    )
+    item_zero = dict(ITEM)
+    item_zero["available_quantity"] = 0
+    monkeypatch.setattr(meli, "get_items_details", lambda ids: [item_zero])
+    dados = main._caixa_entrada_dados(123, [])
+    assert len(dados["a_enviar"]) == 1  # só o pago
+    assert len(dados["estoque"]) == 1  # sem estoque
+    assert dados["estoque"][0]["nivel_estoque"] == "sem"
+    assert dados["total"] == 2
