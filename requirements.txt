@@ -6,3 +6,9 @@ python-dotenv>=1.0
 pydantic-settings>=2.3
 itsdangerous>=2.2
 python-multipart>=0.0.9
+
+# Observabilidade (OpenTelemetry)
+opentelemetry-sdk
+opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-httpx
+opentelemetry-exporter-otlp-proto-http

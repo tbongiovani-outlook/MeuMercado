@@ -223,5 +223,8 @@ __marimo__/
 .DS_Store
 Thumbs.db
 
+# Logs e telemetria local
+logs/
+
 # Configurações locais do editor
 .vscode/

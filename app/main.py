@@ -16,20 +16,28 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from . import auth, database, meli
+from . import auth, database, meli, telemetry
 from .config import settings
+
+# Configura logging em arquivo assim que o módulo é importado.
+logger = telemetry.setup_logging()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     database.init_db()
+    logger.info("Aplicação iniciada. Banco pronto em %s", settings.database_path)
     yield
+    logger.info("Aplicação finalizada.")
 
 
 app = FastAPI(title="Meu Mercado", lifespan=lifespan)
 app.add_middleware(SessionMiddleware, secret_key=settings.app_secret_key)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+# Instrumenta a aplicação com OpenTelemetry.
+telemetry.setup_telemetry(app)
 
 
 def _current_user_id(request: Request):
@@ -63,18 +71,39 @@ def home(request: Request):
 
     if context["configured"] and context["connected"]:
         try:
-            ml_user = meli.api_get("/users/me")
-            context["ml_user"] = ml_user
-            items = meli.api_get(
-                f"/users/{ml_user['id']}/items/search", {"limit": 20}
-            )
-            context["items"] = items.get("results", [])
-            orders = meli.api_get(
-                "/orders/search", {"seller": ml_user["id"], "sort": "date_desc"}
-            )
-            context["orders"] = orders.get("results", [])
-        except Exception as exc:  # noqa: BLE001 - exibimos o erro na tela
-            context["error"] = str(exc)
+            context["ml_user"] = meli.api_get("/users/me")
+        except Exception as exc:  # noqa: BLE001
+            context["error"] = f"Não foi possível ler os dados da conta: {exc}"
+
+        ml_user = context["ml_user"]
+        avisos = []
+        if ml_user:
+            try:
+                items = meli.api_get(
+                    f"/users/{ml_user['id']}/items/search", {"limit": 20}
+                )
+                context["items"] = items.get("results", [])
+            except Exception as exc:  # noqa: BLE001
+                avisos.append(
+                    "Não foi possível ler os anúncios — habilite a permissão "
+                    "\"Publicação e sincronização\" no seu app do Mercado Livre "
+                    "e reconecte. "
+                    f"(detalhe: {exc})"
+                )
+            try:
+                orders = meli.api_get(
+                    "/orders/search", {"seller": ml_user["id"], "sort": "date_desc"}
+                )
+                context["orders"] = orders.get("results", [])
+            except Exception as exc:  # noqa: BLE001
+                avisos.append(
+                    "Não foi possível ler as vendas — verifique a permissão de "
+                    "vendas/pedidos no seu app do Mercado Livre e reconecte. "
+                    f"(detalhe: {exc})"
+                )
+
+        if avisos and not context["error"]:
+            context["error"] = " · ".join(avisos)
 
     return templates.TemplateResponse(request, "dashboard.html", context)
 
@@ -116,6 +145,7 @@ def criar_conta(
     salt, password_hash = auth.hash_password(password)
     user_id = database.create_user(username, password_hash, salt)
     request.session["user_id"] = user_id
+    logger.info("Conta local criada: %s (id=%s)", username, user_id)
     return _redirect("/configuracao")
 
 
@@ -234,11 +264,13 @@ def callback(
     try:
         meli.exchange_code(code, verifier)
     except Exception as exc:  # noqa: BLE001
+        logger.exception("Falha ao trocar code por token")
         request.session["flash"] = f"Falha ao conectar ao Mercado Livre: {exc}"
         return _redirect("/")
 
     request.session.pop("oauth_state", None)
     request.session.pop("pkce_verifier", None)
+    logger.info("Conta do Mercado Livre conectada com sucesso.")
     return _redirect("/")
 
 

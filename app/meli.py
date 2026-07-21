@@ -2,6 +2,7 @@
 
 import base64
 import hashlib
+import logging
 import secrets
 import time
 from urllib.parse import urlencode
@@ -14,6 +15,8 @@ from .config import settings
 _TIMEOUT = 30
 # Renova o token com esta antecedência (segundos) antes de expirar.
 _REFRESH_MARGIN = 60
+
+_logger = logging.getLogger("meu_mercado.meli")
 
 
 def generate_pkce_pair() -> tuple[str, str]:
@@ -104,6 +107,8 @@ def api_get(path: str, params: dict | None = None) -> dict:
         headers={"Authorization": f"Bearer {access}"},
         timeout=_TIMEOUT,
     )
+    if resp.status_code >= 400:
+        _logger.warning("GET %s -> %s", path, resp.status_code)
     resp.raise_for_status()
     return resp.json()
 
@@ -129,4 +134,9 @@ def _persist(token: dict) -> None:
         refresh_token=token.get("refresh_token"),
         scope=token.get("scope"),
         expires_in=token.get("expires_in", 21600),
+    )
+    _logger.info(
+        "Token salvo (user_id=%s, expira em %ss).",
+        token.get("user_id"),
+        token.get("expires_in", 21600),
     )
