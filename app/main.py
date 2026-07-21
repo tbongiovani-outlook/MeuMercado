@@ -9,6 +9,7 @@ Fluxo de uso (fácil para o usuário final, roda em Windows e macOS):
 
 import secrets
 from contextlib import asynccontextmanager
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 import asyncio
 import csv
@@ -256,9 +257,20 @@ def _dashboard_metrics(ml_user: dict) -> dict:
     avisos: list[str] = []
     orders: list[dict] = []
     uid = ml_user["id"]
+    agora = datetime.now(timezone.utc)
+    date_from = (agora - timedelta(days=60)).strftime("%Y-%m-%dT%H:%M:%S.000-00:00")
+
+    # Busca as 4 fontes em paralelo (a API do ML responde ~1s por chamada).
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        f_itens = executor.submit(
+            lambda: meli.get_items_details(meli.list_item_ids(uid, limit=50))
+        )
+        f_pedidos = executor.submit(meli.search_orders, uid, 50, date_from)
+        f_perguntas = executor.submit(meli.search_questions, uid)
+        f_reclamacoes = executor.submit(meli.search_claims)
 
     try:
-        detalhes = meli.get_items_details(meli.list_item_ids(uid, limit=50))
+        detalhes = f_itens.result()
         kpis["anuncios_total"] = len(detalhes)
         kpis["anuncios_ativos"] = sum(1 for d in detalhes if d.get("status") == "active")
         kpis["sem_estoque"] = sum(
@@ -281,10 +293,8 @@ def _dashboard_metrics(ml_user: dict) -> dict:
             f"(detalhe: {exc})"
         )
 
-    agora = datetime.now(timezone.utc)
     try:
-        date_from = (agora - timedelta(days=60)).strftime("%Y-%m-%dT%H:%M:%S.000-00:00")
-        orders = meli.search_orders(uid, limit=50, date_from=date_from)
+        orders = f_pedidos.result()
         kpis.update(_orders_metrics(orders, agora))
     except Exception as exc:  # noqa: BLE001
         avisos.append(
@@ -293,13 +303,13 @@ def _dashboard_metrics(ml_user: dict) -> dict:
         )
 
     try:
-        q = meli.search_questions(uid)
+        q = f_perguntas.result()
         kpis["perguntas_pendentes"] = q.get("total") or len(q.get("questions", []))
     except Exception:  # noqa: BLE001
         pass
 
     try:
-        c = meli.search_claims()
+        c = f_reclamacoes.result()
         kpis["reclamacoes_abertas"] = (c.get("paging") or {}).get("total") or len(
             c.get("data", c.get("results", []))
         )
