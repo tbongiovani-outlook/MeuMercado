@@ -6,6 +6,22 @@ Sistema web para **gerenciar anúncios, vendas, entregas, mensagens e reclamaç�
 
 ---
 
+## ⬇️ Instalação em 1 clique (Windows)
+
+Página de download: **https://tbongiovani-outlook.github.io/MeuMercado/**
+
+1. Acesse a página acima e clique em **Baixar instalador**.
+2. Dê **dois cliques** no arquivo `instalar.bat` baixado (se o Windows avisar, clique em **Mais informações → Executar assim mesmo**).
+3. Ele instala o Python (se faltar), baixa o app, prepara tudo em modo silencioso e **abre o site** em `http://127.0.0.1:8000`. Um atalho **Meu Mercado** é criado na área de trabalho.
+
+Não exige administrador (instala apenas para o seu usuário). Alternativa via PowerShell:
+
+```powershell
+iex ((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/tbongiovani-outlook/MeuMercado/main/instalar.ps1'))
+```
+
+---
+
 ## 🎯 Objetivo
 
 Um usuário que vende no Mercado Livre autentica-se em **Meu Mercado**, que por sua vez se autentica no Mercado Livre em nome dele. A partir daí, o usuário consegue publicar e acompanhar seus anúncios sem precisar entrar no painel do Mercado Livre.

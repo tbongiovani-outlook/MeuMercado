@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Mercado — instalação em 1 clique</title>
+    <meta name="description" content="Painel local para vendedores do Mercado Livre. Instale com um clique no Windows.">
+    <style>
+        :root {
+            --accent: #2d3277;
+            --accent-2: #1f2456;
+            --bg: #f5f6fa;
+            --card: #ffffff;
+            --text: #1b1e28;
+            --muted: #626871;
+            --border: #e2e5ee;
+            --ok: #00a650;
+            --radius: 12px;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+            color: var(--text);
+            background: linear-gradient(160deg, #eef0f8 0%, var(--bg) 100%);
+            min-height: 100vh;
+        }
+        header {
+            text-align: center;
+            padding: 3rem 1.25rem 1.5rem;
+        }
+        .brand { font-size: 2.4rem; margin: 0; letter-spacing: -0.5px; }
+        .brand span { color: var(--accent); }
+        .sub { color: var(--muted); font-size: 1.1rem; margin-top: 0.5rem; }
+        main { max-width: 720px; margin: 0 auto; padding: 0 1.25rem 4rem; }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.75rem;
+            box-shadow: 0 8px 30px rgba(31, 36, 86, 0.08);
+            margin-bottom: 1.5rem;
+        }
+        .cta { text-align: center; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            background: var(--accent);
+            color: #fff;
+            text-decoration: none;
+            font-size: 1.15rem;
+            font-weight: 600;
+            padding: 0.95rem 1.8rem;
+            border-radius: 999px;
+            transition: background 0.15s, transform 0.15s;
+        }
+        .btn:hover { background: var(--accent-2); transform: translateY(-1px); }
+        .btn__hint { display: block; color: var(--muted); font-size: 0.9rem; margin-top: 0.75rem; }
+        h2 { font-size: 1.25rem; margin: 0 0 1rem; }
+        ol { margin: 0; padding-left: 1.25rem; line-height: 1.7; }
+        ol li { margin-bottom: 0.35rem; }
+        .steps b { color: var(--accent); }
+        code, pre {
+            font-family: "Cascadia Code", Consolas, monospace;
+            font-size: 0.9rem;
+        }
+        pre {
+            background: #0f1226;
+            color: #e6e8f5;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        .muted { color: var(--muted); }
+        .badge {
+            display: inline-block;
+            background: #eef0f8;
+            color: var(--accent);
+            border-radius: 999px;
+            padding: 0.15rem 0.7rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        footer { text-align: center; color: var(--muted); font-size: 0.85rem; padding: 1.5rem; }
+        a { color: var(--accent); }
+    </style>
+</head>
+<body>
+    <header>
+        <h1 class="brand">🛒 Meu <span>Mercado</span></h1>
+        <p class="sub">Seu painel local para vender melhor no Mercado Livre.</p>
+    </header>
+
+    <main>
+        <section class="card cta">
+            <span class="badge">Windows 10 / 11</span>
+            <h2 style="margin-top: 0.75rem;">Instalação em 1 clique</h2>
+            <p class="muted">Baixe e execute — ele instala tudo sozinho e abre o site no final.</p>
+            <a class="btn" href="instalar.bat" download>⬇️ Baixar instalador</a>
+            <span class="btn__hint">Depois de baixar, dê dois cliques em <code>instalar.bat</code>.</span>
+        </section>
+
+        <section class="card steps">
+            <h2>Como funciona</h2>
+            <ol>
+                <li>Clique em <b>Baixar instalador</b> e salve o arquivo.</li>
+                <li>Dê <b>dois cliques</b> em <code>instalar.bat</code>.</li>
+                <li>Se o Windows avisar, clique em <b>Mais informações → Executar assim mesmo</b>.</li>
+                <li>Aguarde: ele instala o Python (se preciso), baixa o app e prepara tudo.</li>
+                <li>No fim, o site abre em <code>http://127.0.0.1:8000</code> e um atalho é criado na área de trabalho.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>Prefere pelo PowerShell?</h2>
+            <p class="muted">Cole este comando no PowerShell (não precisa de administrador):</p>
+            <pre>iex ((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/tbongiovani-outlook/MeuMercado/main/instalar.ps1'))</pre>
+        </section>
+
+        <section class="card">
+            <h2>O que preciso ter?</h2>
+            <ul class="muted" style="line-height: 1.7; margin: 0; padding-left: 1.25rem;">
+                <li>Windows 10 ou 11. O instalador cuida do Python automaticamente.</li>
+                <li>Uma aplicação criada no <a href="https://developers.mercadolivre.com.br/devcenter" target="_blank" rel="noopener">DevCenter do Mercado Livre</a> (Client ID e Secret). O próprio app te guia na configuração.</li>
+                <li>Nada é instalado para outros usuários nem exige senha de administrador.</li>
+            </ul>
+        </section>
+    </main>
+
+    <footer>
+        Projeto open source ·
+        <a href="https://github.com/tbongiovani-outlook/MeuMercado" target="_blank" rel="noopener">ver no GitHub</a>
+    </footer>
+</body>
+</html>
