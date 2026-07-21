@@ -10,7 +10,7 @@ Fluxo de uso (fácil para o usuário final, roda em Windows e macOS):
 import secrets
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -331,6 +331,7 @@ def publicar(
     marca: str = Form(""),
     gtin: str = Form(""),
     category_id: str = Form(""),
+    image_file: UploadFile | None = File(None),
 ):
     redirect, _ = _require_ready(request)
     if redirect:
@@ -359,6 +360,18 @@ def publicar(
         if not category_id:
             raise RuntimeError("Não foi possível prever a categoria para este título.")
 
+        pictures = None
+        if image_file is not None and image_file.filename:
+            picture_id = meli.upload_picture(
+                image_file.file.read(),
+                image_file.filename,
+                image_file.content_type or "image/jpeg",
+            )
+            if picture_id:
+                pictures = [{"id": picture_id}]
+        elif image_url.strip():
+            pictures = [{"source": image_url.strip()}]
+
         res = meli.publish(
             title=title,
             category_id=category_id,
@@ -368,7 +381,7 @@ def publicar(
             listing_type_id=listing_type_id,
             brand=marca,
             gtin=gtin,
-            image_url=image_url,
+            pictures=pictures,
         )
         resultado["ok"] = True
         resultado["item"] = res["item"]

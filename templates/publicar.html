@@ -30,7 +30,7 @@
 {% endif %}
 
 <section class="card">
-    <form class="form" method="post" action="/publicar">
+    <form class="form" method="post" action="/publicar" enctype="multipart/form-data">
         <label class="field">
             <span>Título do anúncio</span>
             <input type="text" name="title" required value="{{ form.title or '' }}"
@@ -72,6 +72,11 @@
             <span>URL da imagem</span>
             <input type="url" name="image_url" value="{{ form.image_url or '' }}"
                    placeholder="https://.../foto.jpg">
+        </label>
+
+        <label class="field">
+            <span>Ou envie uma imagem do computador</span>
+            <input type="file" name="image_file" accept="image/*">
         </label>
 
         <label class="field">

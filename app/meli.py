@@ -244,6 +244,23 @@ def publish_item(payload: dict) -> dict:
     return api_post("/items", payload)
 
 
+def upload_picture(content: bytes, filename: str, content_type: str) -> str:
+    """Envia uma imagem local para o Mercado Livre e retorna o id da foto."""
+    access = get_valid_access_token()
+    if not access:
+        raise RuntimeError("Sem token válido. Faça login novamente.")
+    resp = httpx.post(
+        f"{settings.meli_api_base}/pictures/items/upload",
+        headers={"Authorization": f"Bearer {access}"},
+        files={"file": (filename, content, content_type or "image/jpeg")},
+        timeout=_TIMEOUT,
+    )
+    if resp.status_code >= 400:
+        _logger.warning("upload picture -> %s: %s", resp.status_code, resp.text[:400])
+    resp.raise_for_status()
+    return resp.json().get("id", "")
+
+
 def publish_item_smart(base: dict, title: str) -> dict:
     """Publica tentando com 'title'; se a categoria exigir 'family_name', tenta assim."""
     try:
@@ -297,7 +314,7 @@ def publish(
     listing_type_id: str,
     brand: str = "",
     gtin: str = "",
-    image_url: str = "",
+    pictures: list[dict] | None = None,
 ) -> dict:
     """Publica um anúncio de forma resiliente.
 
@@ -317,8 +334,8 @@ def publish(
         "listing_type_id": listing_type_id,
         "attributes": build_required_attributes(category_id, brand, gtin),
     }
-    if image_url.strip():
-        base["pictures"] = [{"source": image_url.strip()}]
+    if pictures:
+        base["pictures"] = pictures
 
     try:
         return {"item": publish_item_smart(base, title.strip()), "catalog_product": None}
