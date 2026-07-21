@@ -315,8 +315,9 @@ curl -X POST \
 - [x] Painel de estatísticas
 - [x] Gestão de anúncios (pausar / reativar / encerrar)
 - [x] Responder perguntas direto pelo painel
+- [x] Editar preço/estoque do anúncio pelo painel
+- [x] Upload de imagem local ao publicar
 - [ ] Mensagens pós-venda por pedido (função pronta; falta a interface)
-- [ ] Editar preço/estoque do anúncio pelo painel
 
 ---
 
