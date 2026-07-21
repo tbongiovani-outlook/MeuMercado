@@ -346,6 +346,8 @@ curl -X POST \
 - [x] Paginação de anúncios e vendas
 - [x] Agendamento de ações (pausar/reativar/preço programados)
 - [x] Cache local configurável (painel e tendências) com “Atualizar agora”
+- [x] Cache dos dados da conta (`/users/me`) para acelerar as telas
+- [x] Carregamento paralelo das métricas do painel (~5,6s → ~2,0s)
 
 ---
 
