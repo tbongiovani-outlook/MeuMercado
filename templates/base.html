@@ -11,6 +11,8 @@
     <header class="topbar">
         <button class="hamburger" id="menu-toggle" aria-label="Abrir menu"
                 aria-expanded="false" aria-controls="sidebar">☰</button>
+        <button class="collapse-btn" id="sidebar-collapse" type="button"
+                aria-label="Recolher menu" aria-pressed="false" title="Recolher menu">«</button>
         <a class="brand" href="/">🛒 Meu Mercado</a>
     </header>
     <div class="layout">
@@ -62,6 +64,30 @@
             });
             document.addEventListener("keydown", function (e) {
                 if (e.key === "Escape") setOpen(false);
+            });
+        })();
+
+        // Recolher a sidebar só em ícones no desktop (estado lembrado).
+        (function () {
+            var layout = document.querySelector(".layout");
+            var btn = document.getElementById("sidebar-collapse");
+            var sidebar = document.getElementById("sidebar");
+            if (!layout || !btn || !sidebar || !sidebar.querySelector(".nav")) {
+                if (btn) btn.style.display = "none";
+                return;
+            }
+            function apply(collapsed) {
+                layout.classList.toggle("layout--collapsed", collapsed);
+                btn.setAttribute("aria-pressed", collapsed ? "true" : "false");
+                btn.setAttribute("aria-label", collapsed ? "Expandir menu" : "Recolher menu");
+                btn.title = collapsed ? "Expandir menu" : "Recolher menu";
+                btn.textContent = collapsed ? "»" : "«";
+            }
+            apply(localStorage.getItem("mm_sidebar_collapsed") === "1");
+            btn.addEventListener("click", function () {
+                var collapsed = !layout.classList.contains("layout--collapsed");
+                localStorage.setItem("mm_sidebar_collapsed", collapsed ? "1" : "0");
+                apply(collapsed);
             });
         })();
     </script>
