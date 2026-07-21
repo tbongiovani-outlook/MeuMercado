@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Tendências · Meu Mercado{% endblock %}
+{% block nav %}{% include "_nav.html" %}{% endblock %}
+
+{% block content %}
+<h1>Tendências de busca</h1>
+<p class="muted">O que os compradores estão mais procurando agora no Mercado Livre.
+    Use estas palavras nos títulos e descrições dos seus anúncios para aparecer mais.</p>
+
+{% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
+
+<section class="card">
+    {% if trends %}
+    <ol class="trends">
+        {% for t in trends %}
+        <li class="trends__item">
+            <span class="trends__rank">{{ loop.index }}</span>
+            <span class="trends__kw">{{ t.keyword }}</span>
+            {% if t.url %}<a class="btn btn--ghost btn--sm" href="{{ t.url }}" target="_blank" rel="noopener" aria-label="Ver resultados de {{ t.keyword }} (abre em nova aba)">Ver no ML</a>{% endif %}
+        </li>
+        {% endfor %}
+    </ol>
+    {% else %}
+    <p class="muted">Nenhuma tendência disponível no momento.</p>
+    {% endif %}
+</section>
+{% endblock %}

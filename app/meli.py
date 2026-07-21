@@ -161,6 +161,13 @@ def get_me() -> dict:
     return api_get("/users/me")
 
 
+def get_trends(category_id: str = "") -> list[dict]:
+    """Termos de busca em alta no Mercado Livre (geral ou por categoria)."""
+    path = f"/trends/MLB/{category_id}" if category_id else "/trends/MLB"
+    data = api_get(path)
+    return data if isinstance(data, list) else []
+
+
 def update_item_status(item_id: str, status: str) -> dict:
     """Altera o status de um anúncio (active, paused ou closed)."""
     return api_put(f"/items/{item_id}", {"status": status})

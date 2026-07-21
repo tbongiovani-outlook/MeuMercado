@@ -870,3 +870,21 @@ def lucratividade(request: Request):
     ctx["totais"] = totais
     return templates.TemplateResponse(request, "lucratividade.html", ctx)
 
+
+# ---------------------------------------------------------------------------
+# Tendências (palavras-chave em alta)
+# ---------------------------------------------------------------------------
+@app.get("/tendencias")
+def tendencias(request: Request):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    ctx = _base_context(request)
+    trends = []
+    try:
+        trends = meli.get_trends()
+    except Exception as exc:  # noqa: BLE001
+        ctx["error"] = f"Não foi possível carregar as tendências: {exc}"
+    ctx["trends"] = trends
+    return templates.TemplateResponse(request, "tendencias.html", ctx)
+
