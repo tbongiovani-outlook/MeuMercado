@@ -661,3 +661,89 @@ code {
     margin-top: 1rem;
     border-top: 1px solid var(--border);
 }
+
+/* Telas de autenticação (entrar / criar conta) */
+.auth {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    max-width: 920px;
+    margin: 2.5rem auto;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+}
+.auth__panel {
+    background: var(--brand-grad);
+    color: #fff;
+    padding: 2.6rem 2.3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    position: relative;
+    overflow: hidden;
+}
+.auth__panel::after {
+    content: "";
+    position: absolute;
+    right: -22%;
+    bottom: -30%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(255, 255, 255, .18), transparent 62%);
+    pointer-events: none;
+}
+.auth__logo {
+    width: 52px;
+    height: 52px;
+    border-radius: 15px;
+    background: rgba(255, 255, 255, .16);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+}
+.auth__title {
+    font-size: 1.55rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0.4rem 0 0;
+}
+.auth__lead { margin: 0; opacity: 0.92; line-height: 1.55; }
+.auth__bullets {
+    list-style: none;
+    margin: 0.6rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+.auth__bullets li {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-weight: 500;
+}
+.auth__bullets li::before {
+    content: "✓";
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .22);
+    font-size: 0.78rem;
+    font-weight: 800;
+    flex: 0 0 auto;
+}
+.auth__form { padding: 2.6rem 2.3rem; }
+.auth__form h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+.auth__form .form { margin-top: 1.25rem; }
+
+@media (max-width: 720px) {
+    .auth { grid-template-columns: 1fr; max-width: 440px; }
+    .auth__panel { display: none; }
+    .auth__form { padding: 2rem 1.75rem; }
+}

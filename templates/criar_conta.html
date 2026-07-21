@@ -2,32 +2,35 @@
 {% block title %}Criar conta · Meu Mercado{% endblock %}
 
 {% block content %}
-<section class="card card--center">
-    <h1>Bem-vindo ao Meu Mercado</h1>
-    <p class="muted">
-        Este é o seu primeiro acesso. Crie um <strong>usuário e senha</strong> para
-        proteger o aplicativo nesta máquina. A senha é guardada de forma segura
-        (hash de mão única) — nunca em texto puro.
-    </p>
+<div class="auth">
+    {% include "_auth_panel.html" %}
+    <div class="auth__form">
+        <h1>Bem-vindo!</h1>
+        <p class="muted">
+            Este é o seu primeiro acesso. Crie um <strong>usuário e senha</strong> para
+            proteger o aplicativo nesta máquina. A senha é guardada de forma segura
+            (hash de mão única) — nunca em texto puro.
+        </p>
 
-    {% if error %}
-    <div class="alert alert--error">{{ error }}</div>
-    {% endif %}
+        {% if error %}
+        <div class="alert alert--error">{{ error }}</div>
+        {% endif %}
 
-    <form method="post" action="/criar-conta" class="form">
-        <label class="field">
-            <span>Usuário</span>
-            <input type="text" name="username" autocomplete="username" required minlength="3" autofocus>
-        </label>
-        <label class="field">
-            <span>Senha</span>
-            <input type="password" name="password" autocomplete="new-password" required minlength="6">
-        </label>
-        <label class="field">
-            <span>Confirmar senha</span>
-            <input type="password" name="confirm" autocomplete="new-password" required minlength="6">
-        </label>
-        <button class="btn btn--primary" type="submit">Criar conta e continuar</button>
-    </form>
-</section>
+        <form method="post" action="/criar-conta" class="form">
+            <label class="field">
+                <span>Usuário</span>
+                <input type="text" name="username" autocomplete="username" required minlength="3" autofocus>
+            </label>
+            <label class="field">
+                <span>Senha</span>
+                <input type="password" name="password" autocomplete="new-password" required minlength="6">
+            </label>
+            <label class="field">
+                <span>Confirmar senha</span>
+                <input type="password" name="confirm" autocomplete="new-password" required minlength="6">
+            </label>
+            <button class="btn btn--primary" type="submit">Criar conta e continuar</button>
+        </form>
+    </div>
+</div>
 {% endblock %}
