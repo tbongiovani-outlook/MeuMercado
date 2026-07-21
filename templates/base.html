@@ -90,6 +90,23 @@
                 apply(collapsed);
             });
         })();
+
+        // Respostas rápidas: preenche o campo de texto ao escolher um template.
+        (function () {
+            document.addEventListener("change", function (e) {
+                var sel = e.target;
+                if (!sel.classList || !sel.classList.contains("reply__tpl")) return;
+                if (!sel.value) return;
+                var form = sel.closest("form");
+                if (!form) return;
+                var campo = form.querySelector('input[name="text"], textarea[name="text"]');
+                if (campo) {
+                    campo.value = sel.value;
+                    campo.focus();
+                }
+                sel.selectedIndex = 0;
+            });
+        })();
     </script>
 </body>
 </html>

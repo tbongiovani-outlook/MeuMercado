@@ -24,6 +24,14 @@
                 {% if q.status == 'UNANSWERED' %}
                 <form class="reply" method="post" action="/pos-venda/responder">
                     <input type="hidden" name="question_id" value="{{ q.id }}">
+                    {% if respostas %}
+                    <select class="reply__tpl" aria-label="Usar resposta rápida">
+                        <option value="">Resposta rápida…</option>
+                        {% for r in respostas %}
+                        <option value="{{ r.texto }}">{{ r.titulo }}</option>
+                        {% endfor %}
+                    </select>
+                    {% endif %}
                     <input type="text" name="text" required maxlength="2000" placeholder="Escreva a resposta…">
                     <button class="btn btn--primary btn--sm" type="submit">Responder</button>
                 </form>

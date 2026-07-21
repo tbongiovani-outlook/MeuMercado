@@ -736,7 +736,8 @@ def mensagens_form(request: Request, order_id: str):
         return redirect
     ctx = _base_context(request)
     ctx.update({"order_id": order_id, "messages": [], "pack_id": order_id,
-                "buyer_id": None, "seller_id": None})
+                "buyer_id": None, "seller_id": None,
+                "respostas": database.list_quick_replies()})
     try:
         me = meli.get_me()
         ctx["seller_id"] = me["id"]
@@ -782,7 +783,8 @@ def pos_venda(request: Request):
     if redirect:
         return redirect
     ctx = _base_context(request)
-    ctx.update({"questions": [], "claims": [], "avisos": []})
+    ctx.update({"questions": [], "claims": [], "avisos": [],
+                "respostas": database.list_quick_replies()})
     try:
         me = meli.get_me()
         try:
@@ -911,4 +913,35 @@ def tendencias(request: Request):
         ctx["error"] = f"Não foi possível carregar as tendências: {exc}"
     ctx["trends"] = trends
     return templates.TemplateResponse(request, "tendencias.html", ctx)
+
+
+# ---------------------------------------------------------------------------
+# Respostas rápidas (templates de mensagens)
+# ---------------------------------------------------------------------------
+@app.get("/respostas")
+def respostas_form(request: Request):
+    if not _current_user_id(request):
+        return _redirect("/entrar")
+    ctx = _base_context(request)
+    ctx["respostas"] = database.list_quick_replies()
+    return templates.TemplateResponse(request, "respostas.html", ctx)
+
+
+@app.post("/respostas")
+def respostas_add(request: Request, titulo: str = Form(...), texto: str = Form(...)):
+    if not _current_user_id(request):
+        return _redirect("/entrar")
+    if titulo.strip() and texto.strip():
+        database.add_quick_reply(titulo.strip(), texto.strip())
+        request.session["flash"] = "Resposta rápida salva."
+    return _redirect("/respostas")
+
+
+@app.post("/respostas/{reply_id}/excluir")
+def respostas_delete(request: Request, reply_id: int):
+    if not _current_user_id(request):
+        return _redirect("/entrar")
+    database.delete_quick_reply(reply_id)
+    request.session["flash"] = "Resposta rápida excluída."
+    return _redirect("/respostas")
 

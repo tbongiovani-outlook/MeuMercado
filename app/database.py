@@ -56,6 +56,16 @@ def init_db() -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS quick_replies (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                titulo     TEXT NOT NULL,
+                texto      TEXT NOT NULL,
+                created_at INTEGER NOT NULL
+            )
+            """
+        )
 
 
 def save_token(
@@ -151,3 +161,24 @@ def get_config(key: str) -> Optional[str]:
             "SELECT value FROM app_config WHERE key = ?", (key,)
         ).fetchone()
         return row["value"] if row else None
+
+
+def list_quick_replies() -> list[dict]:
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT id, titulo, texto FROM quick_replies ORDER BY titulo"
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+
+def add_quick_reply(titulo: str, texto: str) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO quick_replies (titulo, texto, created_at) VALUES (?, ?, ?)",
+            (titulo, texto, int(time.time())),
+        )
+
+
+def delete_quick_reply(reply_id: int) -> None:
+    with get_conn() as conn:
+        conn.execute("DELETE FROM quick_replies WHERE id = ?", (reply_id,))

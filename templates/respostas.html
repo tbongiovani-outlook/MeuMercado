@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Respostas rápidas · Meu Mercado{% endblock %}
+{% block nav %}{% include "_nav.html" %}{% endblock %}
+
+{% block content %}
+<h1>Respostas rápidas</h1>
+<p class="muted">Crie mensagens prontas para responder perguntas e conversas com um clique.
+    Responder rápido melhora a experiência do comprador e o posicionamento.</p>
+
+{% if flash %}<div class="alert alert--ok" role="status">{{ flash }}</div>{% endif %}
+{% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
+
+<section class="card">
+    <h2>Nova resposta</h2>
+    <form class="form" method="post" action="/respostas">
+        <label class="field">
+            <span>Título <em class="req">*</em></span>
+            <input type="text" name="titulo" required maxlength="60" placeholder="Ex.: Prazo de entrega">
+        </label>
+        <label class="field">
+            <span>Texto <em class="req">*</em></span>
+            <textarea name="texto" rows="3" required maxlength="2000"
+                      placeholder="Ex.: Olá! O envio é feito em até 1 dia útil após a confirmação do pagamento."></textarea>
+        </label>
+        <button class="btn btn--primary" type="submit">Salvar resposta</button>
+    </form>
+</section>
+
+<section class="card">
+    <h2>Minhas respostas <span class="badge">{{ respostas|length }}</span></h2>
+    {% if respostas %}
+    <ul class="list">
+        {% for r in respostas %}
+        <li>
+            <div class="row">
+                <div>
+                    <strong>{{ r.titulo }}</strong>
+                    <p class="muted">{{ r.texto }}</p>
+                </div>
+                <form method="post" action="/respostas/{{ r.id }}/excluir"
+                      onsubmit="return confirm('Excluir esta resposta?');">
+                    <button class="btn btn--ghost btn--sm" type="submit">Excluir</button>
+                </form>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">Nenhuma resposta rápida ainda. Crie a primeira acima.</p>
+    {% endif %}
+</section>
+{% endblock %}

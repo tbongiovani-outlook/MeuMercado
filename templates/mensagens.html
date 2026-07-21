@@ -30,6 +30,14 @@
     <form class="reply" method="post" action="/vendas/{{ order_id }}/mensagens">
         <input type="hidden" name="pack_id" value="{{ pack_id }}">
         <input type="hidden" name="buyer_id" value="{{ buyer_id }}">
+        {% if respostas %}
+        <select class="reply__tpl" aria-label="Usar resposta rápida">
+            <option value="">Resposta rápida…</option>
+            {% for r in respostas %}
+            <option value="{{ r.texto }}">{{ r.titulo }}</option>
+            {% endfor %}
+        </select>
+        {% endif %}
         <input type="text" name="text" required maxlength="2000" placeholder="Escreva uma mensagem…">
         <button class="btn btn--primary btn--sm" type="submit">Enviar</button>
     </form>
