@@ -1,12 +1,20 @@
 {% set path = request.url.path %}
 <nav class="nav" aria-label="Navegação principal">
     <a class="nav__item" href="/"{% if path == '/' %} aria-current="page"{% endif %}><span class="nav__icon" aria-hidden="true">🏠</span> Painel</a>
-    <a class="nav__item" href="/anuncios"{% if path.startswith('/anuncios') %} aria-current="page"{% endif %}><span class="nav__icon" aria-hidden="true">🏷️</span> Anúncios</a>
+
+    <p class="nav__section">Vender</p>
     <a class="nav__item" href="/publicar"{% if path == '/publicar' %} aria-current="page"{% endif %}><span class="nav__icon" aria-hidden="true">➕</span> Publicar</a>
+    <a class="nav__item" href="/anuncios"{% if path.startswith('/anuncios') %} aria-current="page"{% endif %}><span class="nav__icon" aria-hidden="true">🏷️</span> Anúncios</a>
+
+    <p class="nav__section">Gestão</p>
     <a class="nav__item" href="/vendas"{% if path.startswith('/vendas') %} aria-current="page"{% endif %}><span class="nav__icon" aria-hidden="true">🛒</span> Vendas</a>
     <a class="nav__item" href="/pos-venda"{% if path.startswith('/pos-venda') %} aria-current="page"{% endif %}><span class="nav__icon" aria-hidden="true">💬</span> Pós-venda</a>
+
+    <p class="nav__section">Análise</p>
     <a class="nav__item" href="/lucratividade"{% if path == '/lucratividade' %} aria-current="page"{% endif %}><span class="nav__icon" aria-hidden="true">💰</span> Lucratividade</a>
     <a class="nav__item" href="/estatisticas"{% if path == '/estatisticas' %} aria-current="page"{% endif %}><span class="nav__icon" aria-hidden="true">📊</span> Estatísticas</a>
+
+    <p class="nav__section">Conta</p>
     <a class="nav__item" href="/configuracao"{% if path == '/configuracao' %} aria-current="page"{% endif %}><span class="nav__icon" aria-hidden="true">⚙️</span> Configuração</a>
     <a class="nav__item nav__item--sair" href="/sair"><span class="nav__icon" aria-hidden="true">🚪</span> Sair</a>
 </nav>
