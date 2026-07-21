@@ -318,6 +318,8 @@ curl -X POST \
 - [x] Editar preço/estoque do anúncio pelo painel
 - [x] Upload de imagem local ao publicar
 - [x] Mensagens pós-venda por pedido (ler e responder)
+- [x] Painel de qualidade/posicionamento do anúncio (índice + checklist)
+- [x] Melhorias de usabilidade (agrupamento de campos, dicas, feedback, responsividade)
 
 ---
 
