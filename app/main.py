@@ -986,17 +986,22 @@ def lucratividade(request: Request):
 # Tendências (palavras-chave em alta)
 # ---------------------------------------------------------------------------
 @app.get("/tendencias")
-def tendencias(request: Request):
+def tendencias(request: Request, categoria: str = ""):
     redirect, _ = _require_ready(request)
     if redirect:
         return redirect
     ctx = _base_context(request)
-    trends = []
+    trends, categorias = [], []
     try:
-        trends = meli.get_trends()
+        me = meli.get_me()
+        ids = meli.list_all_item_ids(me["id"])
+        items = meli.get_items_details(ids)
+        cat_ids = sorted({it.get("category_id") for it in items if it.get("category_id")})
+        categorias = [{"id": c, "nome": meli.get_category_name(c)} for c in cat_ids]
+        trends = meli.get_trends(categoria)
     except Exception as exc:  # noqa: BLE001
         ctx["error"] = f"Não foi possível carregar as tendências: {exc}"
-    ctx["trends"] = trends
+    ctx.update({"trends": trends, "categorias": categorias, "categoria": categoria})
     return templates.TemplateResponse(request, "tendencias.html", ctx)
 
 

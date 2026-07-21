@@ -168,6 +168,15 @@ def get_trends(category_id: str = "") -> list[dict]:
     return data if isinstance(data, list) else []
 
 
+def get_category_name(category_id: str) -> str:
+    """Nome legível de uma categoria (ou o próprio id em caso de falha)."""
+    try:
+        data = api_get(f"/categories/{category_id}")
+    except Exception:  # noqa: BLE001
+        return category_id
+    return data.get("name", category_id)
+
+
 def update_item_status(item_id: str, status: str) -> dict:
     """Altera o status de um anúncio (active, paused ou closed)."""
     return api_put(f"/items/{item_id}", {"status": status})
@@ -473,7 +482,7 @@ def get_items_details(item_ids: list[str]) -> list[dict]:
         return []
     attrs = (
         "id,title,price,available_quantity,sold_quantity,status,"
-        "permalink,thumbnail,catalog_product_id,shipping"
+        "permalink,thumbnail,catalog_product_id,category_id,shipping"
     )
     resultado: list[dict] = []
     for i in range(0, len(item_ids), 20):

@@ -9,6 +9,21 @@
 
 {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
 
+{% if categorias %}
+<form class="filtros" method="get" action="/tendencias">
+    <label class="field field--inline">
+        <span>Categoria</span>
+        <select name="categoria" onchange="this.form.submit()">
+            <option value="">Geral (todas)</option>
+            {% for c in categorias %}
+            <option value="{{ c.id }}" {% if categoria == c.id %}selected{% endif %}>{{ c.nome }}</option>
+            {% endfor %}
+        </select>
+    </label>
+    <noscript><button class="btn btn--ghost btn--sm" type="submit">Filtrar</button></noscript>
+</form>
+{% endif %}
+
 <section class="card">
     {% if trends %}
     <ol class="trends">
