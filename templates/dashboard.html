@@ -114,6 +114,30 @@
     </a>
 </div>
 
+{% if kpis.mais_vendido %}
+<div class="grid">
+    <section class="card">
+        <h2>🏆 Mais vendido (ativo)</h2>
+        <p><strong>{{ kpis.mais_vendido.title }}</strong></p>
+        <p class="muted">{{ kpis.mais_vendido.sold_quantity or 0 }} vendas · R$ {{ kpis.mais_vendido.price }}</p>
+        <div class="actions">
+            <a class="btn btn--ghost btn--sm" href="/anuncios/{{ kpis.mais_vendido.id }}/qualidade">Qualidade</a>
+            {% if kpis.mais_vendido.permalink %}<a class="btn btn--ghost btn--sm" href="{{ kpis.mais_vendido.permalink }}" target="_blank" rel="noopener" aria-label="Ver {{ kpis.mais_vendido.title }} no Mercado Livre (abre em nova aba)">Ver</a>{% endif %}
+        </div>
+    </section>
+    <section class="card">
+        <h2>🐢 Menos vendido (ativo)</h2>
+        <p><strong>{{ kpis.menos_vendido.title }}</strong></p>
+        <p class="muted">{{ kpis.menos_vendido.sold_quantity or 0 }} vendas · R$ {{ kpis.menos_vendido.price }}</p>
+        <div class="actions">
+            <a class="btn btn--ghost btn--sm" href="/anuncios/{{ kpis.menos_vendido.id }}/qualidade">Qualidade</a>
+            <a class="btn btn--ghost btn--sm" href="/anuncios/{{ kpis.menos_vendido.id }}/concorrencia">Concorrência</a>
+            {% if kpis.menos_vendido.permalink %}<a class="btn btn--ghost btn--sm" href="{{ kpis.menos_vendido.permalink }}" target="_blank" rel="noopener" aria-label="Ver {{ kpis.menos_vendido.title }} no Mercado Livre (abre em nova aba)">Ver</a>{% endif %}
+        </div>
+    </section>
+</div>
+{% endif %}
+
 {% if kpis.vendas_por_dia and kpis.vendas_por_dia|sum > 0 %}
 <section class="card">
     <h2>Vendas por dia (30 dias)</h2>

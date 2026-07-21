@@ -67,6 +67,16 @@ def _trend(atual: float, anterior: float) -> dict:
     return {"dir": "up" if pct > 0 else "down" if pct < 0 else "flat", "pct": pct}
 
 
+def _destaques_ativos(detalhes: list[dict]) -> tuple[dict | None, dict | None]:
+    """Retorna (mais vendido, menos vendido) entre os anúncios ativos."""
+    ativos = [d for d in detalhes if d.get("status") == "active"]
+    if not ativos:
+        return None, None
+    mais = max(ativos, key=lambda d: d.get("sold_quantity") or 0)
+    menos = min(ativos, key=lambda d: d.get("sold_quantity") or 0)
+    return mais, menos
+
+
 def _count_acima_concorrencia(detalhes: list[dict], limite: int = 12) -> int:
     """Conta anúncios ativos de catálogo com preço acima do menor concorrente."""
     acima = verificados = 0
@@ -137,6 +147,7 @@ def _dashboard_metrics(ml_user: dict) -> dict:
         "liquido_30d": 0.0, "ticket_medio": 0.0, "acima_concorrencia": 0,
         "perguntas_pendentes": 0, "reclamacoes_abertas": 0,
         "trend_vendas": None, "trend_faturamento": None, "vendas_por_dia": [],
+        "mais_vendido": None, "menos_vendido": None,
         "reputacao": (ml_user.get("seller_reputation") or {}).get("level_id"),
     }
     acoes: list[dict] = []
@@ -153,6 +164,7 @@ def _dashboard_metrics(ml_user: dict) -> dict:
             if d.get("status") == "active" and (d.get("available_quantity") or 0) == 0
         )
         kpis["acima_concorrencia"] = _count_acima_concorrencia(detalhes)
+        kpis["mais_vendido"], kpis["menos_vendido"] = _destaques_ativos(detalhes)
     except Exception as exc:  # noqa: BLE001
         avisos.append(
             "Não foi possível ler os anúncios — habilite a permissão "
