@@ -1,0 +1,20 @@
+[tool.pytest.ini_options]
+addopts = "-q --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=80"
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "app/__init__.py",
+    "app/meli.py",
+    "app/telemetry.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]
