@@ -3,6 +3,10 @@
 Registro das mudanças implementadas (gerado automaticamente a cada merge na `main`).
 
 <!-- novas-entradas -->
+## 2026-07-21
+
+- test: suite pytest (cobertura 82%) + CI GitHub Actions (#1) (b756771)
+
 
 ## 2026-07-21 — Base
 
