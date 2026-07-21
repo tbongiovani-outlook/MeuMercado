@@ -5,6 +5,7 @@
     <p class="nav__section">Vender</p>
     <a class="nav__item" href="/publicar" title="Publicar"{% if path == '/publicar' %} aria-current="page"{% endif %}><span class="nav__icon" aria-hidden="true">➕</span><span class="nav__label">Publicar</span></a>
     <a class="nav__item" href="/anuncios" title="Anúncios"{% if path.startswith('/anuncios') %} aria-current="page"{% endif %}><span class="nav__icon" aria-hidden="true">🏷️</span><span class="nav__label">Anúncios</span></a>
+    <a class="nav__item" href="/promocoes" title="Promoções"{% if path.startswith('/promocoes') %} aria-current="page"{% endif %}><span class="nav__icon" aria-hidden="true">🔖</span><span class="nav__label">Promoções</span></a>
 
     <p class="nav__section">Gestão</p>
     <a class="nav__item" href="/vendas" title="Vendas"{% if path.startswith('/vendas') %} aria-current="page"{% endif %}><span class="nav__icon" aria-hidden="true">🛒</span><span class="nav__label">Vendas</span></a>

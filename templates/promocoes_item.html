@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Ofertas do anúncio · Meu Mercado{% endblock %}
+{% block nav %}{% include "_nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <h1>Ofertas de promoção</h1>
+    <a class="btn btn--ghost" href="/promocoes">Voltar</a>
+</div>
+{% if item %}
+<p class="muted">{{ item.title }} · <code>{{ item.id }}</code> · preço atual:
+    <strong>R$ {{ '%.2f'|format(item.price or 0) }}</strong></p>
+{% endif %}
+
+{% if flash %}<div class="alert alert--ok" role="status">{{ flash }}</div>{% endif %}
+{% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
+
+<section class="card">
+    {% if ofertas %}
+    <ul class="list">
+        {% for o in ofertas %}
+        <li>
+            <div class="row">
+                <div>
+                    <strong>{{ o.type or 'Promoção' }}</strong>
+                    {% if o.status %}<span class="badge">{{ o.status }}</span>{% endif %}
+                    <br>
+                    <small class="muted">
+                        {% if o.min_discounted_price %}preço mín.: R$ {{ '%.2f'|format(o.min_discounted_price) }}{% endif %}
+                        {% if o.max_discounted_price %} · máx.: R$ {{ '%.2f'|format(o.max_discounted_price) }}{% endif %}
+                        {% if o.finish_date %} · até {{ (o.finish_date or '')[:10] }}{% endif %}
+                    </small>
+                </div>
+            </div>
+            {% if o.status == 'started' %}
+            <form method="post" action="/promocoes/{{ item.id }}/remover"
+                  onsubmit="return confirm('Remover esta promoção do anúncio?');">
+                <input type="hidden" name="promotion_id" value="{{ o.id }}">
+                <input type="hidden" name="promotion_type" value="{{ o.type }}">
+                <button class="btn btn--ghost btn--sm" type="submit">Remover promoção</button>
+            </form>
+            {% else %}
+            <form class="reply" method="post" action="/promocoes/{{ item.id }}/aplicar"
+                  onsubmit="return confirm('Aplicar esta promoção ao anúncio?');">
+                <input type="hidden" name="promotion_id" value="{{ o.id }}">
+                <input type="hidden" name="promotion_type" value="{{ o.type }}">
+                <input type="number" name="deal_price" step="0.01" min="0.01" required
+                       placeholder="Preço promocional (R$)"
+                       value="{{ '%.2f'|format(o.suggested_discounted_price) if o.suggested_discounted_price else '' }}">
+                <button class="btn btn--primary btn--sm" type="submit">Aplicar</button>
+            </form>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">Nenhuma oferta de promoção disponível para este anúncio no momento.
+        O Mercado Livre disponibiliza ofertas conforme elegibilidade do produto.</p>
+    {% endif %}
+</section>
+{% endblock %}

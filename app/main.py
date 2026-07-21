@@ -1239,6 +1239,81 @@ def historico(request: Request):
 
 
 # ---------------------------------------------------------------------------
+# Promoções e descontos
+# ---------------------------------------------------------------------------
+@app.get("/promocoes")
+def promocoes(request: Request):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    ctx = _base_context(request)
+    ctx.update({"campanhas": [], "items": []})
+    try:
+        me = meli.get_me()
+        ctx["campanhas"] = meli.get_seller_promotions(me["id"])
+        ids = meli.list_all_item_ids(me["id"])
+        ctx["items"] = meli.get_items_details(ids)
+    except Exception as exc:  # noqa: BLE001
+        ctx["error"] = f"Não foi possível carregar as promoções: {exc}"
+    return templates.TemplateResponse(request, "promocoes.html", ctx)
+
+
+@app.get("/promocoes/{item_id}")
+def promocoes_item(request: Request, item_id: str):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    ctx = _base_context(request)
+    ctx.update({"item": None, "ofertas": []})
+    try:
+        ctx["item"] = meli.get_item(item_id)
+        ctx["ofertas"] = meli.get_item_promotions(item_id)
+    except Exception as exc:  # noqa: BLE001
+        ctx["error"] = f"Não foi possível carregar as ofertas: {exc}"
+    return templates.TemplateResponse(request, "promocoes_item.html", ctx)
+
+
+@app.post("/promocoes/{item_id}/aplicar")
+def promocoes_aplicar(
+    request: Request,
+    item_id: str,
+    promotion_id: str = Form(...),
+    promotion_type: str = Form(...),
+    deal_price: float = Form(...),
+):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    try:
+        meli.apply_item_promotion(item_id, promotion_id, promotion_type, deal_price)
+        request.session["flash"] = f"Promoção aplicada ao anúncio {item_id}."
+        logger.info("Promoção %s aplicada em %s", promotion_id, item_id)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Falha ao aplicar promoção")
+        request.session["flash"] = f"Não foi possível aplicar a promoção: {exc}"
+    return _redirect(f"/promocoes/{item_id}")
+
+
+@app.post("/promocoes/{item_id}/remover")
+def promocoes_remover(
+    request: Request,
+    item_id: str,
+    promotion_id: str = Form(...),
+    promotion_type: str = Form(...),
+):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    try:
+        meli.remove_item_promotion(item_id, promotion_id, promotion_type)
+        request.session["flash"] = f"Promoção removida do anúncio {item_id}."
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Falha ao remover promoção")
+        request.session["flash"] = f"Não foi possível remover a promoção: {exc}"
+    return _redirect(f"/promocoes/{item_id}")
+
+
+# ---------------------------------------------------------------------------
 # Respostas rápidas (templates de mensagens)
 # ---------------------------------------------------------------------------
 @app.get("/respostas")

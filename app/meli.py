@@ -177,6 +177,54 @@ def get_category_name(category_id: str) -> str:
     return data.get("name", category_id)
 
 
+def get_seller_promotions(user_id: int) -> list[dict]:
+    """Campanhas/promoções disponíveis para o vendedor."""
+    data = api_get(f"/seller-promotions/users/{user_id}", {"app_version": "v2"})
+    return data.get("results", []) if isinstance(data, dict) else []
+
+
+def get_item_promotions(item_id: str) -> list[dict]:
+    """Ofertas de promoção disponíveis para um anúncio."""
+    data = api_get(f"/seller-promotions/items/{item_id}", {"app_version": "v2"})
+    return data if isinstance(data, list) else data.get("results", [])
+
+
+def apply_item_promotion(
+    item_id: str, promotion_id: str, promotion_type: str, deal_price: float
+) -> dict:
+    """Aplica uma promoção (preço promocional) a um anúncio."""
+    payload = {
+        "promotion_id": promotion_id,
+        "promotion_type": promotion_type,
+        "deal_price": round(deal_price, 2),
+    }
+    return api_post(
+        f"/seller-promotions/items/{item_id}?app_version=v2", payload
+    )
+
+
+def remove_item_promotion(item_id: str, promotion_id: str, promotion_type: str) -> None:
+    """Remove a promoção de um anúncio."""
+    access = get_valid_access_token()
+    if not access:
+        raise RuntimeError("Sem token válido. Faça login novamente.")
+    params = {
+        "app_version": "v2",
+        "promotion_id": promotion_id,
+        "promotion_type": promotion_type,
+    }
+    resp = httpx.delete(
+        f"{settings.meli_api_base}/seller-promotions/items/{item_id}",
+        params=params,
+        headers={"Authorization": f"Bearer {access}"},
+        timeout=_TIMEOUT,
+    )
+    if resp.status_code >= 400:
+        _logger.warning("DELETE promo %s -> %s: %s", item_id, resp.status_code, resp.text[:300])
+    resp.raise_for_status()
+
+
+
 def update_item_status(item_id: str, status: str) -> dict:
     """Altera o status de um anúncio (active, paused ou closed)."""
     return api_put(f"/items/{item_id}", {"status": status})

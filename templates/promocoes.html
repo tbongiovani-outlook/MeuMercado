@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Promoções · Meu Mercado{% endblock %}
+{% block nav %}{% include "_nav.html" %}{% endblock %}
+
+{% block content %}
+<h1>Promoções e descontos</h1>
+<p class="muted">Participe de campanhas do Mercado Livre e crie descontos nos seus anúncios
+    para aumentar a visibilidade e as vendas.</p>
+
+{% if flash %}<div class="alert alert--ok" role="status">{{ flash }}</div>{% endif %}
+{% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
+
+<section class="card">
+    <h2>Campanhas disponíveis <span class="badge">{{ campanhas|length }}</span></h2>
+    {% if campanhas %}
+    <ul class="list">
+        {% for c in campanhas %}
+        <li>
+            <strong>{{ c.name or c.id }}</strong>
+            <span class="badge">{{ c.type }}</span>
+            {% if c.status %}<span class="badge">{{ c.status }}</span>{% endif %}
+            {% if c.finish_date %}<br><small class="muted">até {{ (c.finish_date or '')[:10] }}</small>{% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">Nenhuma campanha disponível para sua conta no momento. O Mercado Livre
+        oferece campanhas conforme seu histórico e categoria — volte a consultar aqui.</p>
+    {% endif %}
+</section>
+
+<section class="card">
+    <h2>Seus anúncios</h2>
+    {% if items %}
+    <table class="table">
+        <thead>
+            <tr><th>Título</th><th>Preço</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for it in items %}
+            <tr>
+                <td>{{ it.title }}</td>
+                <td>R$ {{ '%.2f'|format(it.price or 0) }}</td>
+                <td><span class="badge">{{ it.status }}</span></td>
+                <td><a class="btn btn--ghost btn--sm" href="/promocoes/{{ it.id }}">Ver ofertas</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted">Nenhum anúncio encontrado.</p>
+    {% endif %}
+</section>
+{% endblock %}
