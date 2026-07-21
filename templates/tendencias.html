@@ -8,20 +8,30 @@
     Use estas palavras nos títulos e descrições dos seus anúncios para aparecer mais.</p>
 
 {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
+{% if aviso %}<div class="alert alert--warn" role="status">{{ aviso }}</div>{% endif %}
 
-{% if categorias %}
 <form class="filtros" method="get" action="/tendencias">
+    {% if categorias %}
     <label class="field field--inline">
-        <span>Categoria</span>
+        <span>Minhas categorias</span>
         <select name="categoria" onchange="this.form.submit()">
-            <option value="">Geral (todas)</option>
+            <option value="">Todas (geral)</option>
             {% for c in categorias %}
-            <option value="{{ c.id }}" {% if categoria == c.id %}selected{% endif %}>{{ c.nome }}</option>
+            <option value="{{ c.id }}" {% if categoria == c.id and not termo %}selected{% endif %}>{{ c.nome }}</option>
             {% endfor %}
         </select>
     </label>
-    <noscript><button class="btn btn--ghost btn--sm" type="submit">Filtrar</button></noscript>
+    {% endif %}
+    <label class="field field--inline">
+        <span>Ou digite um produto/categoria</span>
+        <input type="search" name="termo" value="{{ termo or '' }}" placeholder="Ex.: tênis, celular, cadeira gamer…">
+    </label>
+    <button class="btn btn--ghost btn--sm" type="submit">Buscar</button>
+    {% if termo or categoria %}<a class="btn btn--ghost btn--sm" href="/tendencias">Limpar</a>{% endif %}
 </form>
+
+{% if categoria_nome %}
+<p class="muted">Mostrando tendências de <strong>{{ categoria_nome }}</strong>.</p>
 {% endif %}
 
 <section class="card">
