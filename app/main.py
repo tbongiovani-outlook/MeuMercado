@@ -1496,6 +1496,105 @@ def responder_perguntas_massa(
 
 
 # ---------------------------------------------------------------------------
+# Caixa de entrada unificada (tudo que precisa de ação hoje)
+# ---------------------------------------------------------------------------
+def _caixa_entrada_dados(uid: int, respostas: list[dict]) -> dict:
+    """Reúne em paralelo tudo que precisa de ação: perguntas sem resposta,
+    reclamações abertas, pedidos pagos a enviar e anúncios com estoque baixo."""
+    dados: dict = {"perguntas": [], "reclamacoes": [], "a_enviar": [], "estoque": []}
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        f_itens = executor.submit(lambda: meli.get_items_details(meli.list_item_ids(uid, limit=50)))
+        f_pedidos = executor.submit(meli.search_orders, uid, 50)
+        f_perguntas = executor.submit(meli.search_questions, uid)
+        f_reclamacoes = executor.submit(meli.search_claims)
+
+    try:
+        perguntas = f_perguntas.result().get("questions", [])
+        for p in perguntas:
+            p["sugestao"] = _sugerir_resposta(p.get("text", ""), respostas)
+        dados["perguntas"] = perguntas
+    except Exception:  # noqa: BLE001
+        pass
+
+    try:
+        c = f_reclamacoes.result()
+        dados["reclamacoes"] = c.get("data", c.get("results", []))
+    except Exception:  # noqa: BLE001
+        pass
+
+    try:
+        dados["a_enviar"] = [o for o in f_pedidos.result() if o.get("status") == "paid"]
+    except Exception:  # noqa: BLE001
+        pass
+
+    try:
+        limite = _limite_estoque_baixo()
+        estoque = []
+        for d in f_itens.result():
+            if d.get("status") != "active":
+                continue
+            qtd = d.get("available_quantity") or 0
+            if qtd == 0:
+                d["nivel_estoque"] = "sem"
+                estoque.append(d)
+            elif qtd <= limite:
+                d["nivel_estoque"] = "baixo"
+                estoque.append(d)
+        dados["estoque"] = estoque
+    except Exception:  # noqa: BLE001
+        pass
+
+    dados["total"] = (
+        len(dados["perguntas"])
+        + len(dados["reclamacoes"])
+        + len(dados["a_enviar"])
+        + len(dados["estoque"])
+    )
+    return dados
+
+
+@app.get("/caixa-entrada")
+def caixa_entrada(request: Request):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    ctx = _base_context(request)
+    respostas = database.list_quick_replies()
+    ctx.update(
+        {
+            "perguntas": [],
+            "reclamacoes": [],
+            "a_enviar": [],
+            "estoque": [],
+            "total": 0,
+            "respostas": respostas,
+        }
+    )
+    try:
+        me = meli.get_me()
+        ctx.update(_caixa_entrada_dados(me["id"], respostas))
+    except Exception as exc:  # noqa: BLE001
+        ctx["error"] = f"Não foi possível montar a caixa de entrada: {exc}"
+    return templates.TemplateResponse(request, "caixa_entrada.html", ctx)
+
+
+@app.post("/caixa-entrada/responder")
+def caixa_entrada_responder(request: Request, question_id: int = Form(...), text: str = Form(...)):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    try:
+        meli.answer_question(question_id, text.strip())
+        request.session["flash"] = "Resposta enviada."
+        logger.info("Pergunta %s respondida pela caixa de entrada.", question_id)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Falha ao responder pela caixa de entrada")
+        request.session["flash"] = f"Não foi possível responder: {exc}"
+    return _redirect("/caixa-entrada")
+
+
+# ---------------------------------------------------------------------------
 # Estatísticas (visitas)
 # ---------------------------------------------------------------------------
 @app.get("/estatisticas")
