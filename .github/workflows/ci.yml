@@ -6,22 +6,50 @@ on:
   pull_request:
     branches: [main, develop]
 
+# Cancela execuções antigas do mesmo ref quando um novo push chega.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
-  testes:
-    name: Testes e cobertura (mín. 80%)
+  lint:
+    name: Lint (Ruff)
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Instalar Ruff
+        run: pip install "ruff>=0.6"
+      - name: Ruff (lint)
+        run: ruff check app tests
+      - name: Ruff (formatação)
+        run: ruff format --check app tests
 
+  testes:
+    name: Testes (${{ matrix.os }} / py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.11"]
+        include:
+          - os: ubuntu-latest
+            python-version: "3.12"
     steps:
       - name: Checkout do código
         uses: actions/checkout@v4
 
-      - name: Configurar Python 3.11
+      - name: Configurar Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
           cache: pip
 
       - name: Instalar dependências
@@ -36,6 +64,50 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-xml
+          name: coverage-${{ matrix.os }}-py${{ matrix.python-version }}
           path: coverage.xml
           if-no-files-found: ignore
+
+  seguranca:
+    name: Segurança (pip-audit + gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: pip-audit (vulnerabilidades nas dependências)
+        run: |
+          pip install "pip-audit>=2.7"
+          pip-audit -r requirements.txt --strict
+
+      - name: gitleaks (varredura de segredos)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  ci-ok:
+    name: CI aprovado
+    if: always()
+    needs: [lint, testes, seguranca]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Conferir resultados dos jobs
+        run: |
+          echo "lint=${{ needs.lint.result }}"
+          echo "testes=${{ needs.testes.result }}"
+          echo "seguranca=${{ needs.seguranca.result }}"
+          if [ "${{ needs.lint.result }}" != "success" ] || \
+             [ "${{ needs.testes.result }}" != "success" ] || \
+             [ "${{ needs.seguranca.result }}" != "success" ]; then
+            echo "::error::Algum job do CI falhou."
+            exit 1
+          fi
+          echo "Todos os jobs passaram."
