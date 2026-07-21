@@ -131,6 +131,18 @@ def _me_cached(force: bool = False):
     me = meli.api_get("/users/me")
     return me, _cache_gravar("me", me)
 
+
+def _nav_badges() -> dict:
+    """Contadores do menu (perguntas pendentes e vendas novas), lidos do cache."""
+    row = database.cache_get("nav_badges")
+    if not row:
+        return {"perguntas": 0, "vendas": 0}
+    try:
+        dados = json.loads(row["valor"])
+        return {"perguntas": int(dados.get("perguntas", 0)), "vendas": int(dados.get("vendas", 0))}
+    except (ValueError, TypeError):
+        return {"perguntas": 0, "vendas": 0}
+
 # Instrumenta a aplicação com OpenTelemetry.
 telemetry.setup_telemetry(app)
 
@@ -181,27 +193,28 @@ def _destaques_ativos(detalhes: list[dict]) -> tuple[dict | None, dict | None]:
 
 def _count_acima_concorrencia(detalhes: list[dict], limite: int = 12) -> int:
     """Conta anúncios ativos de catálogo com preço acima do menor concorrente."""
-    acima = verificados = 0
-    for d in detalhes:
-        if verificados >= limite:
-            break
-        if d.get("status") != "active" or not d.get("catalog_product_id"):
-            continue
-        preco = d.get("price")
-        if preco is None:
-            continue
+    candidatos = [
+        d for d in detalhes
+        if d.get("status") == "active"
+        and d.get("catalog_product_id")
+        and d.get("price") is not None
+    ][:limite]
+    if not candidatos:
+        return 0
+
+    def _esta_acima(d: dict) -> bool:
         try:
             comps = meli.get_catalog_competitors(d["catalog_product_id"])
         except Exception:  # noqa: BLE001
-            continue
-        verificados += 1
+            return False
         precos = [
             float(c["price"]) for c in comps
             if c.get("price") and c.get("id") != d.get("id")
         ]
-        if precos and float(preco) > min(precos):
-            acima += 1
-    return acima
+        return bool(precos and float(d["price"]) > min(precos))
+
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        return sum(1 for acima in executor.map(_esta_acima, candidatos) if acima)
 
 
 def _orders_metrics(orders: list[dict], agora: datetime) -> dict:
@@ -231,6 +244,7 @@ def _orders_metrics(orders: list[dict], agora: datetime) -> dict:
     fat_ant = sum(float(o.get("total_amount") or 0) for o in anteriores)
     return {
         "vendas_30d": len(atuais),
+        "vendas_7d": sum(por_dia[-7:]),
         "faturamento_30d": round(fat, 2),
         "comissoes_30d": round(com, 2),
         "liquido_30d": round(fat - com, 2),
@@ -245,7 +259,7 @@ def _dashboard_metrics(ml_user: dict) -> dict:
     """Calcula os KPIs do painel principal a partir da API do Mercado Livre."""
     kpis = {
         "anuncios_ativos": 0, "anuncios_total": 0, "sem_estoque": 0,
-        "vendas_30d": 0, "faturamento_30d": 0.0, "comissoes_30d": 0.0,
+        "vendas_30d": 0, "vendas_7d": 0, "faturamento_30d": 0.0, "comissoes_30d": 0.0,
         "liquido_30d": 0.0, "ticket_medio": 0.0, "acima_concorrencia": 0,
         "perguntas_pendentes": 0, "reclamacoes_abertas": 0,
         "estoque_baixo": 0, "limite_estoque": 3,
@@ -380,7 +394,13 @@ def home(request: Request, atualizar: int = 0):
             context["orders"] = dados["orders"]
             if dados["avisos"] and not context["error"]:
                 context["error"] = " · ".join(dados["avisos"])
+            _cache_gravar("nav_badges", {
+                "perguntas": (dados["kpis"].get("perguntas_pendentes", 0)
+                              + dados["kpis"].get("reclamacoes_abertas", 0)),
+                "vendas": dados["kpis"].get("vendas_7d", 0),
+            })
 
+    context["badges"] = _nav_badges()
     return templates.TemplateResponse(request, "dashboard.html", context)
 
 
@@ -486,6 +506,7 @@ def configuracao_form(request: Request):
         "cache_ttl_min": int(database.get_config("cache_ttl_min") or 15),
         "connected": conectado,
         "ml_user": conta,
+        "badges": _nav_badges(),
     }
     return templates.TemplateResponse(request, "configuracao.html", context)
 
@@ -531,6 +552,7 @@ def configuracao_save(
         "cache_ttl_min": int(database.get_config("cache_ttl_min") or 15),
         "connected": _conta_conectada()[0],
         "ml_user": _conta_conectada()[1],
+        "badges": _nav_badges(),
     }
     return templates.TemplateResponse(request, "configuracao.html", context)
 
@@ -620,6 +642,7 @@ def _base_context(request: Request) -> dict:
         "username": user["username"] if user else "",
         "error": None,
         "flash": request.session.pop("flash", None),
+        "badges": _nav_badges(),
     }
 
 
@@ -848,6 +871,7 @@ def editar_anuncio_form(request: Request, item_id: str):
     ctx = _base_context(request)
     try:
         ctx["item"] = meli.get_item(item_id)
+        ctx["descricao"] = meli.get_item_description(item_id)
     except Exception as exc:  # noqa: BLE001
         request.session["flash"] = f"Não foi possível abrir o anúncio: {exc}"
         return _redirect("/anuncios")
@@ -855,24 +879,55 @@ def editar_anuncio_form(request: Request, item_id: str):
 
 
 @app.post("/anuncios/{item_id}/editar")
-def editar_anuncio(
+async def editar_anuncio(
     request: Request,
     item_id: str,
     price: float = Form(...),
     available_quantity: int = Form(...),
+    title: str = Form(""),
+    description: str = Form(""),
+    image_file: UploadFile = File(None),
 ):
     redirect, _ = _require_ready(request)
     if redirect:
         return redirect
+    avisos: list[str] = []
+
+    # 1) Preço, estoque e título (mesmo endpoint /items)
+    payload: dict = {"price": price, "available_quantity": available_quantity}
+    if title.strip():
+        payload["title"] = title.strip()
     try:
-        meli.update_item(
-            item_id, {"price": price, "available_quantity": available_quantity}
-        )
-        request.session["flash"] = f"Anúncio {item_id} atualizado."
-        logger.info("Anúncio %s atualizado (preço/estoque).", item_id)
+        meli.update_item(item_id, payload)
     except Exception as exc:  # noqa: BLE001
-        logger.exception("Falha ao atualizar anúncio")
-        request.session["flash"] = f"Não foi possível atualizar o anúncio: {exc}"
+        logger.exception("Falha ao atualizar campos do anúncio")
+        avisos.append(f"Preço/estoque/título: {exc}")
+
+    # 2) Foto nova (opcional) — anexa às existentes
+    if image_file is not None and image_file.filename:
+        try:
+            conteudo = await image_file.read()
+            pic_id = meli.upload_picture(conteudo, image_file.filename, image_file.content_type)
+            atuais = [{"id": p["id"]} for p in (meli.get_item(item_id).get("pictures") or []) if p.get("id")]
+            atuais.append({"id": pic_id})
+            meli.update_item(item_id, {"pictures": atuais})
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Falha ao adicionar foto")
+            avisos.append(f"Foto: {exc}")
+
+    # 3) Descrição (endpoint próprio)
+    if description.strip():
+        try:
+            meli.update_item_description(item_id, description.strip())
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Falha ao atualizar descrição")
+            avisos.append(f"Descrição: {exc}")
+
+    if avisos:
+        request.session["flash"] = "Atualizado com avisos — " + " · ".join(avisos)
+    else:
+        request.session["flash"] = f"Anúncio {item_id} atualizado."
+    logger.info("Anúncio %s atualizado (campos + fotos).", item_id)
     return _redirect("/anuncios")
 
 
@@ -975,7 +1030,7 @@ def aplicar_preco(request: Request, item_id: str, price: float = Form(...)):
 # Vendas e entregas
 # ---------------------------------------------------------------------------
 @app.get("/vendas")
-def vendas(request: Request, pagina: int = 1):
+def vendas(request: Request, q: str = "", status: str = "", pagina: int = 1):
     redirect, _ = _require_ready(request)
     if redirect:
         return redirect
@@ -985,9 +1040,18 @@ def vendas(request: Request, pagina: int = 1):
     total = 0
     try:
         me = meli.get_me()
+        todos = meli.list_all_orders(me["id"])
+
+        termo = q.strip().lower()
+        if termo:
+            todos = [o for o in todos if _order_bate(o, termo)]
+        if status:
+            todos = [o for o in todos if o.get("status") == status]
+
+        total = len(todos)
         pagina = max(1, pagina)
-        offset = (pagina - 1) * por_pagina
-        orders, total = meli.search_orders_page(me["id"], limit=por_pagina, offset=offset)
+        inicio = (pagina - 1) * por_pagina
+        orders = todos[inicio : inicio + por_pagina]
         for order in orders:
             ship = order.get("shipping") or {}
             ship_id = ship.get("id")
@@ -1006,8 +1070,22 @@ def vendas(request: Request, pagina: int = 1):
         "pagina": pagina,
         "total_paginas": total_paginas,
         "total_vendas": total,
+        "q": q,
+        "status_filtro": status,
     })
     return templates.TemplateResponse(request, "vendas.html", ctx)
+
+
+def _order_bate(order: dict, termo: str) -> bool:
+    """Verifica se um pedido corresponde ao termo de busca (id, comprador, produto)."""
+    if termo in str(order.get("id", "")).lower():
+        return True
+    if termo in ((order.get("buyer") or {}).get("nickname") or "").lower():
+        return True
+    for item in order.get("order_items") or []:
+        if termo in ((item.get("item") or {}).get("title") or "").lower():
+            return True
+    return False
 
 
 def _csv_response(nome: str, cabecalho: list[str], linhas: list[list]) -> Response:
