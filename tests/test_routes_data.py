@@ -104,7 +104,10 @@ def test_pos_venda_com_perguntas(auth_client, monkeypatch):
     monkeypatch.setattr(
         meli,
         "search_questions",
-        lambda *a, **k: {"total": 1, "questions": [{"id": 1, "text": "Qual o frete?"}]},
+        lambda *a, **k: {
+            "total": 1,
+            "questions": [{"id": 1, "text": "Qual o frete?", "item_id": "MLB1"}],
+        },
     )
     monkeypatch.setattr(
         meli,
@@ -113,6 +116,7 @@ def test_pos_venda_com_perguntas(auth_client, monkeypatch):
     )
     r = auth_client.get("/pos-venda", follow_redirects=False)
     assert r.status_code == 200
+    assert "/anuncios/MLB1/editar" in r.text
 
 
 def test_mensagens_com_conteudo(auth_client, monkeypatch):
@@ -212,6 +216,8 @@ def test_caixa_entrada_com_itens(auth_client, monkeypatch):
     assert "Perguntas sem resposta" in r.text
     assert "OID1" in r.text
     assert "sem estoque" in r.text
+    assert "/anuncios/MLB1/editar" in r.text
+    assert "Ver anúncio" in r.text
 
 
 def test_caixa_entrada_responder(auth_client):
