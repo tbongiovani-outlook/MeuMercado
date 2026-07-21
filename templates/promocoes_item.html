@@ -9,6 +9,7 @@
         {% if item %}<p class="page-header__sub">{{ item.title }} · preço atual: R$ {{ '%.2f'|format(item.price or 0) }}</p>{% endif %}
     </div>
     <div class="page-header__actions">
+        {% if item and item.id %}<a class="btn btn--ghost" href="/anuncios/{{ item.id }}/editar">Ver anúncio</a>{% endif %}
         <a class="btn btn--ghost" href="/promocoes">← Voltar</a>
     </div>
 </header>
