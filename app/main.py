@@ -571,7 +571,7 @@ def publicar(
 # Anúncios (histórico)
 # ---------------------------------------------------------------------------
 @app.get("/anuncios")
-def anuncios(request: Request):
+def anuncios(request: Request, q: str = "", status: str = "", pagina: int = 1):
     redirect, _ = _require_ready(request)
     if redirect:
         return redirect
@@ -579,11 +579,30 @@ def anuncios(request: Request):
     items = []
     try:
         me = meli.get_me()
-        ids = meli.list_item_ids(me["id"], limit=50)
+        ids = meli.list_all_item_ids(me["id"])
         items = meli.get_items_details(ids)
     except Exception as exc:  # noqa: BLE001
         ctx["error"] = f"Não foi possível carregar os anúncios: {exc}"
-    ctx["items"] = items
+
+    termo = q.strip().lower()
+    if termo:
+        items = [it for it in items if termo in (it.get("title") or "").lower()]
+    if status:
+        items = [it for it in items if it.get("status") == status]
+
+    por_pagina = 20
+    total = len(items)
+    total_paginas = max(1, (total + por_pagina - 1) // por_pagina)
+    pagina = max(1, min(pagina, total_paginas))
+    inicio = (pagina - 1) * por_pagina
+    ctx.update({
+        "items": items[inicio : inicio + por_pagina],
+        "q": q,
+        "status_filtro": status,
+        "pagina": pagina,
+        "total_paginas": total_paginas,
+        "total_itens": total,
+    })
     return templates.TemplateResponse(request, "anuncios.html", ctx)
 
 

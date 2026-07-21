@@ -4,12 +4,30 @@
 
 {% block content %}
 <div class="row">
-    <h1>Meus anúncios <span class="badge">{{ items|length }}</span></h1>
+    <h1>Meus anúncios <span class="badge">{{ total_itens if total_itens is not none else items|length }}</span></h1>
     <a class="btn btn--primary" href="/publicar">Publicar novo</a>
 </div>
 
 {% if flash %}<div class="alert alert--ok" role="status">{{ flash }}</div>{% endif %}
 {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
+
+<form class="filtros" method="get" action="/anuncios">
+    <label class="field field--inline">
+        <span>Buscar</span>
+        <input type="search" name="q" value="{{ q or '' }}" placeholder="Título do anúncio…">
+    </label>
+    <label class="field field--inline">
+        <span>Status</span>
+        <select name="status">
+            <option value="">Todos</option>
+            <option value="active" {% if status_filtro == 'active' %}selected{% endif %}>Ativos</option>
+            <option value="paused" {% if status_filtro == 'paused' %}selected{% endif %}>Pausados</option>
+            <option value="closed" {% if status_filtro == 'closed' %}selected{% endif %}>Encerrados</option>
+        </select>
+    </label>
+    <button class="btn btn--ghost btn--sm" type="submit">Filtrar</button>
+    {% if q or status_filtro %}<a class="btn btn--ghost btn--sm" href="/anuncios">Limpar</a>{% endif %}
+</form>
 
 <section class="card">
     {% if items %}
@@ -43,7 +61,10 @@
             <tr>
                 <td><input type="checkbox" name="item_ids" value="{{ it.id }}" form="form-massa" aria-label="Selecionar {{ it.title }}"></td>
                 <td>{% if it.thumbnail %}<img src="{{ it.thumbnail }}" alt="Foto de {{ it.title }}" width="40" height="40">{% endif %}</td>
-                <td>{{ it.title }}</td>
+                <td>
+                    {{ it.title }}
+                    {% if it.shipping and it.shipping.logistic_type == 'fulfillment' %}<span class="badge badge--full" title="Mercado Envios Full">Full</span>{% endif %}
+                </td>
                 <td>{{ it.price }}</td>
                 <td>{{ it.available_quantity }}</td>
                 <td>{{ it.sold_quantity }}</td>
@@ -84,8 +105,21 @@
             {% endfor %}
         </tbody>
     </table>
+    {% if total_paginas and total_paginas > 1 %}
+    <nav class="paginacao" aria-label="Paginação de anúncios">
+        {% if pagina > 1 %}
+        <a class="btn btn--ghost btn--sm" href="/anuncios?q={{ q or '' }}&status={{ status_filtro or '' }}&pagina={{ pagina - 1 }}">‹ Anterior</a>
+        {% endif %}
+        <span class="muted">Página {{ pagina }} de {{ total_paginas }}</span>
+        {% if pagina < total_paginas %}
+        <a class="btn btn--ghost btn--sm" href="/anuncios?q={{ q or '' }}&status={{ status_filtro or '' }}&pagina={{ pagina + 1 }}">Próxima ›</a>
+        {% endif %}
+    </nav>
+    {% endif %}
     {% else %}
-    <p class="muted">Nenhum anúncio encontrado.</p>
+    <p class="muted">
+        {% if q or status_filtro %}Nenhum anúncio corresponde ao filtro.{% else %}Nenhum anúncio encontrado.{% endif %}
+    </p>
     {% endif %}
 </section>
 {% endblock %}

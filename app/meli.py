@@ -448,17 +448,41 @@ def list_item_ids(user_id: int, limit: int = 50) -> list[str]:
     return data.get("results", [])
 
 
+def list_all_item_ids(user_id: int, cap: int = 200) -> list[str]:
+    """Lista todos os IDs de anúncios do vendedor (paginando até o limite `cap`)."""
+    ids: list[str] = []
+    offset = 0
+    while len(ids) < cap:
+        data = api_get(
+            f"/users/{user_id}/items/search", {"limit": 50, "offset": offset}
+        )
+        pagina = data.get("results", [])
+        if not pagina:
+            break
+        ids.extend(pagina)
+        total = (data.get("paging") or {}).get("total", 0)
+        offset += 50
+        if offset >= total:
+            break
+    return ids[:cap]
+
+
 def get_items_details(item_ids: list[str]) -> list[dict]:
-    """Busca detalhes de vários itens de uma vez (multiget)."""
+    """Busca detalhes de vários itens (multiget, em lotes de 20)."""
     if not item_ids:
         return []
-    ids = ",".join(item_ids[:20])
     attrs = (
         "id,title,price,available_quantity,sold_quantity,status,"
-        "permalink,thumbnail,catalog_product_id"
+        "permalink,thumbnail,catalog_product_id,shipping"
     )
-    data = api_get("/items", {"ids": ids, "attributes": attrs})
-    return [row.get("body", {}) for row in data if row.get("code") == 200]
+    resultado: list[dict] = []
+    for i in range(0, len(item_ids), 20):
+        lote = ",".join(item_ids[i : i + 20])
+        data = api_get("/items", {"ids": lote, "attributes": attrs})
+        resultado.extend(
+            row.get("body", {}) for row in data if row.get("code") == 200
+        )
+    return resultado
 
 
 def search_orders(seller_id: int, limit: int = 30, date_from: str = "") -> list[dict]:
