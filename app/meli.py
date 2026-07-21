@@ -157,6 +157,7 @@ def api_put(path: str, payload: dict) -> dict:
 # Recursos de alto nível (anúncios, vendas, envios, pós-venda, etc.)
 # ---------------------------------------------------------------------------
 
+
 def get_me() -> dict:
     return api_get("/users/me")
 
@@ -198,9 +199,7 @@ def apply_item_promotion(
         "promotion_type": promotion_type,
         "deal_price": round(deal_price, 2),
     }
-    return api_post(
-        f"/seller-promotions/items/{item_id}?app_version=v2", payload
-    )
+    return api_post(f"/seller-promotions/items/{item_id}?app_version=v2", payload)
 
 
 def remove_item_promotion(item_id: str, promotion_id: str, promotion_type: str) -> None:
@@ -224,7 +223,6 @@ def remove_item_promotion(item_id: str, promotion_id: str, promotion_type: str) 
     resp.raise_for_status()
 
 
-
 def update_item_status(item_id: str, status: str) -> dict:
     """Altera o status de um anúncio (active, paused ou closed)."""
     return api_put(f"/items/{item_id}", {"status": status})
@@ -240,12 +238,9 @@ def answer_question(question_id: int, text: str) -> dict:
     return api_post("/answers", {"question_id": question_id, "text": text})
 
 
-
 def predict_category(title: str, site: str = "MLB") -> dict:
     """Sugere categoria e domínio a partir do título (domain discovery)."""
-    results = api_get(
-        f"/sites/{site}/domain_discovery/search", {"limit": 1, "q": title}
-    )
+    results = api_get(f"/sites/{site}/domain_discovery/search", {"limit": 1, "q": title})
     return results[0] if isinstance(results, list) and results else {}
 
 
@@ -300,7 +295,6 @@ def build_required_attributes(category_id: str, brand: str, gtin: str = "") -> l
 
     attrs.extend(_gtin_attributes(all_attrs, gtin))
     return attrs
-
 
 
 def publish_item(payload: dict) -> dict:
@@ -362,7 +356,6 @@ def get_price_suggestion(item_id: str) -> dict:
         return api_get(f"/suggestions/items/{item_id}/details")
     except Exception:  # noqa: BLE001
         return {}
-
 
 
 def publish_catalog_item(
@@ -515,9 +508,7 @@ def list_all_item_ids(user_id: int, cap: int = 200) -> list[str]:
     ids: list[str] = []
     offset = 0
     while len(ids) < cap:
-        data = api_get(
-            f"/users/{user_id}/items/search", {"limit": 50, "offset": offset}
-        )
+        data = api_get(f"/users/{user_id}/items/search", {"limit": 50, "offset": offset})
         pagina = data.get("results", [])
         if not pagina:
             break
@@ -541,9 +532,7 @@ def get_items_details(item_ids: list[str]) -> list[dict]:
     for i in range(0, len(item_ids), 20):
         lote = ",".join(item_ids[i : i + 20])
         data = api_get("/items", {"ids": lote, "attributes": attrs})
-        resultado.extend(
-            row.get("body", {}) for row in data if row.get("code") == 200
-        )
+        resultado.extend(row.get("body", {}) for row in data if row.get("code") == 200)
     return resultado
 
 
@@ -600,9 +589,7 @@ def search_questions(seller_id: int, status: str = "UNANSWERED") -> dict:
 
 def get_pack_messages(pack_id: str, seller_id: int) -> dict:
     """Mensagens pós-venda de um pack/pedido."""
-    return api_get(
-        f"/messages/packs/{pack_id}/sellers/{seller_id}", {"tag": "post_sale"}
-    )
+    return api_get(f"/messages/packs/{pack_id}/sellers/{seller_id}", {"tag": "post_sale"})
 
 
 def send_pack_message(pack_id: str, seller_id: int, buyer_id: int, text: str) -> dict:
@@ -619,9 +606,7 @@ def send_pack_message(pack_id: str, seller_id: int, buyer_id: int, text: str) ->
 
 def search_claims(limit: int = 20, status: str = "opened") -> dict:
     """Reclamações do vendedor (pós-venda). Exige ao menos um filtro."""
-    return api_get(
-        "/post-purchase/v1/claims/search", {"status": status, "limit": limit}
-    )
+    return api_get("/post-purchase/v1/claims/search", {"status": status, "limit": limit})
 
 
 def get_item_visits(item_id: str) -> dict:

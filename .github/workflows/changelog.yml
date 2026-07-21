@@ -1,0 +1,92 @@
+name: Changelog
+
+# Roda quando algo entra na main (após o merge de um PR) e registra
+# os novos itens implementados em CHANGELOG.md.
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - CHANGELOG.md
+
+concurrency:
+  group: changelog-main
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  atualizar-changelog:
+    name: Atualizar CHANGELOG
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          # Token do dono (bypass de admin) para conseguir commitar na main protegida.
+          # Se o secret não existir, o passo abaixo apenas avisa e sai sem erro.
+          token: ${{ secrets.CHANGELOG_TOKEN || github.token }}
+
+      - name: Gerar entradas e commitar
+        env:
+          HAS_PAT: ${{ secrets.CHANGELOG_TOKEN != '' }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          if [ "$HAS_PAT" != "true" ]; then
+            echo "::notice::Defina o secret CHANGELOG_TOKEN (PAT do dono, escopo repo) para ativar a atualização automática do CHANGELOG. Pulando por enquanto."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          ZERO="0000000000000000000000000000000000000000"
+          if [ -n "$BEFORE" ] && [ "$BEFORE" != "$ZERO" ] && git rev-parse --quiet --verify "$BEFORE^{commit}" >/dev/null 2>&1; then
+            RANGE="$BEFORE..$AFTER"
+          else
+            RANGE="$AFTER~1..$AFTER"
+          fi
+
+          # Lista os commits novos (ignora merges e os próprios commits de changelog).
+          ITENS=$(git log $RANGE --no-merges --pretty=format:'- %s (%h)' \
+                  | grep -viE 'atualiza CHANGELOG' || true)
+
+          if [ -z "$ITENS" ]; then
+            echo "Sem novos itens para registrar no CHANGELOG."
+            exit 0
+          fi
+
+          MARKER="<!-- novas-entradas -->"
+          if [ ! -f CHANGELOG.md ]; then
+            printf '# Changelog\n\nRegistro das mudanças implementadas (gerado automaticamente a cada merge na `main`).\n\n%s\n' "$MARKER" > CHANGELOG.md
+          fi
+
+          DATA=$(date -u +%Y-%m-%d)
+          {
+            echo "## $DATA"
+            echo
+            echo "$ITENS"
+            echo
+          } > .novo_bloco.md
+
+          # Insere o novo bloco logo após o marcador (entradas mais recentes no topo).
+          awk -v marker="$MARKER" '
+            { print }
+            $0 == marker {
+              while ((getline line < ".novo_bloco.md") > 0) print line
+            }
+          ' CHANGELOG.md > CHANGELOG.tmp && mv CHANGELOG.tmp CHANGELOG.md
+          rm -f .novo_bloco.md
+
+          if git diff --quiet -- CHANGELOG.md; then
+            echo "CHANGELOG já estava atualizado."
+            exit 0
+          fi
+
+          git add CHANGELOG.md
+          git commit -m "docs: atualiza CHANGELOG [skip ci]"
+          git push

@@ -7,24 +7,24 @@ Fluxo de uso (fácil para o usuário final, roda em Windows e macOS):
   4. Conectar         -> autoriza no Mercado Livre (OAuth) e vê os dados
 """
 
-import secrets
-from contextlib import asynccontextmanager
-from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta, timezone
 import asyncio
 import csv
 import io
 import json
 import re
+import secrets
 import time
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import asynccontextmanager
+from datetime import UTC, datetime, timedelta
+from urllib.parse import urlsplit
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import PlainTextResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from starlette.middleware.sessions import SessionMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from urllib.parse import urlsplit
+from starlette.middleware.sessions import SessionMiddleware
 
 from . import auth, database, meli, quality, telemetry
 from .config import settings
@@ -61,8 +61,12 @@ def _run_due_tasks() -> None:
         try:
             _executar_tarefa(tarefa)
             database.finish_task(tarefa["id"], "concluida", "ok")
-            logger.info("Ação agendada %s executada (%s em %s)",
-                        tarefa["id"], tarefa["tipo"], tarefa["item_id"])
+            logger.info(
+                "Ação agendada %s executada (%s em %s)",
+                tarefa["id"],
+                tarefa["tipo"],
+                tarefa["item_id"],
+            )
         except Exception as exc:  # noqa: BLE001
             logger.exception("Falha ao executar ação agendada %s", tarefa["id"])
             database.finish_task(tarefa["id"], "erro", str(exc)[:200])
@@ -78,7 +82,6 @@ def _executar_tarefa(tarefa: dict) -> None:
         meli.update_item(item_id, {"price": round(tarefa["valor"] or 0, 2)})
     else:
         raise ValueError(f"Tipo de ação desconhecido: {tipo}")
-
 
 
 app = FastAPI(title="Meu Mercado", lifespan=lifespan)
@@ -240,6 +243,7 @@ def _nav_badges() -> dict:
     except (ValueError, TypeError):
         return {"perguntas": 0, "vendas": 0}
 
+
 # Instrumenta a aplicação com OpenTelemetry.
 telemetry.setup_telemetry(app)
 
@@ -291,7 +295,8 @@ def _destaques_ativos(detalhes: list[dict]) -> tuple[dict | None, dict | None]:
 def _count_acima_concorrencia(detalhes: list[dict], limite: int = 12) -> int:
     """Conta anúncios ativos de catálogo com preço acima do menor concorrente."""
     candidatos = [
-        d for d in detalhes
+        d
+        for d in detalhes
         if d.get("status") == "active"
         and d.get("catalog_product_id")
         and d.get("price") is not None
@@ -304,10 +309,7 @@ def _count_acima_concorrencia(detalhes: list[dict], limite: int = 12) -> int:
             comps = meli.get_catalog_competitors(d["catalog_product_id"])
         except Exception:  # noqa: BLE001
             return False
-        precos = [
-            float(c["price"]) for c in comps
-            if c.get("price") and c.get("id") != d.get("id")
-        ]
+        precos = [float(c["price"]) for c in comps if c.get("price") and c.get("id") != d.get("id")]
         return bool(precos and float(d["price"]) > min(precos))
 
     with ThreadPoolExecutor(max_workers=6) as executor:
@@ -334,10 +336,7 @@ def _orders_metrics(orders: list[dict], agora: datetime) -> dict:
             anteriores.append(o)
 
     fat = sum(float(o.get("total_amount") or 0) for o in atuais)
-    com = sum(
-        float(i.get("sale_fee") or 0)
-        for o in atuais for i in o.get("order_items", [])
-    )
+    com = sum(float(i.get("sale_fee") or 0) for o in atuais for i in o.get("order_items", []))
     fat_ant = sum(float(o.get("total_amount") or 0) for o in anteriores)
     return {
         "vendas_30d": len(atuais),
@@ -355,27 +354,37 @@ def _orders_metrics(orders: list[dict], agora: datetime) -> dict:
 def _dashboard_metrics(ml_user: dict) -> dict:
     """Calcula os KPIs do painel principal a partir da API do Mercado Livre."""
     kpis = {
-        "anuncios_ativos": 0, "anuncios_total": 0, "sem_estoque": 0,
-        "vendas_30d": 0, "vendas_7d": 0, "faturamento_30d": 0.0, "comissoes_30d": 0.0,
-        "liquido_30d": 0.0, "ticket_medio": 0.0, "acima_concorrencia": 0,
-        "perguntas_pendentes": 0, "reclamacoes_abertas": 0,
-        "estoque_baixo": 0, "limite_estoque": 3,
-        "trend_vendas": None, "trend_faturamento": None, "vendas_por_dia": [],
-        "mais_vendido": None, "menos_vendido": None,
+        "anuncios_ativos": 0,
+        "anuncios_total": 0,
+        "sem_estoque": 0,
+        "vendas_30d": 0,
+        "vendas_7d": 0,
+        "faturamento_30d": 0.0,
+        "comissoes_30d": 0.0,
+        "liquido_30d": 0.0,
+        "ticket_medio": 0.0,
+        "acima_concorrencia": 0,
+        "perguntas_pendentes": 0,
+        "reclamacoes_abertas": 0,
+        "estoque_baixo": 0,
+        "limite_estoque": 3,
+        "trend_vendas": None,
+        "trend_faturamento": None,
+        "vendas_por_dia": [],
+        "mais_vendido": None,
+        "menos_vendido": None,
         "reputacao": (ml_user.get("seller_reputation") or {}).get("level_id"),
     }
     acoes: list[dict] = []
     avisos: list[str] = []
     orders: list[dict] = []
     uid = ml_user["id"]
-    agora = datetime.now(timezone.utc)
+    agora = datetime.now(UTC)
     date_from = (agora - timedelta(days=60)).strftime("%Y-%m-%dT%H:%M:%S.000-00:00")
 
     # Busca as 4 fontes em paralelo (a API do ML responde ~1s por chamada).
     with ThreadPoolExecutor(max_workers=4) as executor:
-        f_itens = executor.submit(
-            lambda: meli.get_items_details(meli.list_item_ids(uid, limit=50))
-        )
+        f_itens = executor.submit(lambda: meli.get_items_details(meli.list_item_ids(uid, limit=50)))
         f_pedidos = executor.submit(meli.search_orders, uid, 50, date_from)
         f_perguntas = executor.submit(meli.search_questions, uid)
         f_reclamacoes = executor.submit(meli.search_claims)
@@ -385,22 +394,23 @@ def _dashboard_metrics(ml_user: dict) -> dict:
         kpis["anuncios_total"] = len(detalhes)
         kpis["anuncios_ativos"] = sum(1 for d in detalhes if d.get("status") == "active")
         kpis["sem_estoque"] = sum(
-            1 for d in detalhes
+            1
+            for d in detalhes
             if d.get("status") == "active" and (d.get("available_quantity") or 0) == 0
         )
         limite = _limite_estoque_baixo()
         kpis["limite_estoque"] = limite
         kpis["estoque_baixo"] = sum(
-            1 for d in detalhes
-            if d.get("status") == "active"
-            and 0 < (d.get("available_quantity") or 0) <= limite
+            1
+            for d in detalhes
+            if d.get("status") == "active" and 0 < (d.get("available_quantity") or 0) <= limite
         )
         kpis["acima_concorrencia"] = _count_acima_concorrencia(detalhes)
         kpis["mais_vendido"], kpis["menos_vendido"] = _destaques_ativos(detalhes)
     except Exception as exc:  # noqa: BLE001
         avisos.append(
             "Não foi possível ler os anúncios — habilite a permissão "
-            "\"Publicação e sincronização\" e reconecte. "
+            '"Publicação e sincronização" e reconecte. '
             f"(detalhe: {exc})"
         )
 
@@ -428,21 +438,46 @@ def _dashboard_metrics(ml_user: dict) -> dict:
         pass
 
     if kpis["perguntas_pendentes"]:
-        acoes.append({"tipo": "warn", "link": "/pos-venda",
-                      "texto": f"{kpis['perguntas_pendentes']} pergunta(s) sem resposta"})
+        acoes.append(
+            {
+                "tipo": "warn",
+                "link": "/pos-venda",
+                "texto": f"{kpis['perguntas_pendentes']} pergunta(s) sem resposta",
+            }
+        )
     if kpis["reclamacoes_abertas"]:
-        acoes.append({"tipo": "error", "link": "/pos-venda",
-                      "texto": f"{kpis['reclamacoes_abertas']} reclamação(ões) aberta(s)"})
+        acoes.append(
+            {
+                "tipo": "error",
+                "link": "/pos-venda",
+                "texto": f"{kpis['reclamacoes_abertas']} reclamação(ões) aberta(s)",
+            }
+        )
     if kpis["sem_estoque"]:
-        acoes.append({"tipo": "warn", "link": "/anuncios",
-                      "texto": f"{kpis['sem_estoque']} anúncio(s) ativo(s) sem estoque"})
+        acoes.append(
+            {
+                "tipo": "warn",
+                "link": "/anuncios",
+                "texto": f"{kpis['sem_estoque']} anúncio(s) ativo(s) sem estoque",
+            }
+        )
     if kpis["estoque_baixo"]:
-        acoes.append({"tipo": "warn", "link": "/anuncios",
-                      "texto": f"{kpis['estoque_baixo']} anúncio(s) com estoque baixo "
-                               f"(≤ {kpis['limite_estoque']})"})
+        acoes.append(
+            {
+                "tipo": "warn",
+                "link": "/anuncios",
+                "texto": f"{kpis['estoque_baixo']} anúncio(s) com estoque baixo "
+                f"(≤ {kpis['limite_estoque']})",
+            }
+        )
     if kpis["acima_concorrencia"]:
-        acoes.append({"tipo": "warn", "link": "/anuncios",
-                      "texto": f"{kpis['acima_concorrencia']} anúncio(s) com preço acima da concorrência"})
+        acoes.append(
+            {
+                "tipo": "warn",
+                "link": "/anuncios",
+                "texto": f"{kpis['acima_concorrencia']} anúncio(s) com preço acima da concorrência",
+            }
+        )
 
     return {"kpis": kpis, "acoes": acoes, "avisos": avisos, "orders": orders[:10]}
 
@@ -491,11 +526,16 @@ def home(request: Request, atualizar: int = 0):
             context["orders"] = dados["orders"]
             if dados["avisos"] and not context["error"]:
                 context["error"] = " · ".join(dados["avisos"])
-            _cache_gravar("nav_badges", {
-                "perguntas": (dados["kpis"].get("perguntas_pendentes", 0)
-                              + dados["kpis"].get("reclamacoes_abertas", 0)),
-                "vendas": dados["kpis"].get("vendas_7d", 0),
-            })
+            _cache_gravar(
+                "nav_badges",
+                {
+                    "perguntas": (
+                        dados["kpis"].get("perguntas_pendentes", 0)
+                        + dados["kpis"].get("reclamacoes_abertas", 0)
+                    ),
+                    "vendas": dados["kpis"].get("vendas_7d", 0),
+                },
+            )
 
     context["badges"] = _nav_badges()
     return templates.TemplateResponse(request, "dashboard.html", context)
@@ -504,16 +544,19 @@ def home(request: Request, atualizar: int = 0):
 def _registrar_snapshot(kpis: dict) -> None:
     """Grava o resumo do dia para montar o histórico (best-effort)."""
     try:
-        hoje = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        database.save_snapshot(hoje, {
-            "vendas": kpis.get("vendas_30d", 0),
-            "faturamento": kpis.get("faturamento_30d", 0.0),
-            "liquido": kpis.get("liquido_30d", 0.0),
-            "ativos": kpis.get("anuncios_ativos", 0),
-            "sem_estoque": kpis.get("sem_estoque", 0),
-            "perguntas": kpis.get("perguntas_pendentes", 0),
-            "reclamacoes": kpis.get("reclamacoes_abertas", 0),
-        })
+        hoje = datetime.now(UTC).strftime("%Y-%m-%d")
+        database.save_snapshot(
+            hoje,
+            {
+                "vendas": kpis.get("vendas_30d", 0),
+                "faturamento": kpis.get("faturamento_30d", 0.0),
+                "liquido": kpis.get("liquido_30d", 0.0),
+                "ativos": kpis.get("anuncios_ativos", 0),
+                "sem_estoque": kpis.get("sem_estoque", 0),
+                "perguntas": kpis.get("perguntas_pendentes", 0),
+                "reclamacoes": kpis.get("reclamacoes_abertas", 0),
+            },
+        )
     except Exception:  # noqa: BLE001
         logger.exception("Falha ao gravar snapshot diário")
 
@@ -548,9 +591,7 @@ def criar_conta(
         error = "As senhas não conferem."
 
     if error:
-        return templates.TemplateResponse(
-            request, "criar_conta.html", {"error": error}
-        )
+        return templates.TemplateResponse(request, "criar_conta.html", {"error": error})
 
     salt, password_hash = auth.hash_password(password)
     user_id = database.create_user(username, password_hash, salt)
@@ -569,9 +610,7 @@ def entrar_form(request: Request):
 @app.post("/entrar")
 def entrar(request: Request, username: str = Form(...), password: str = Form(...)):
     user = database.get_user_by_username(username.strip())
-    if not user or not auth.verify_password(
-        password, user["salt"], user["password_hash"]
-    ):
+    if not user or not auth.verify_password(password, user["salt"], user["password_hash"]):
         return templates.TemplateResponse(
             request, "entrar.html", {"error": "Usuário ou senha inválidos."}
         )
@@ -786,8 +825,13 @@ def publicar(
         "gtin": gtin,
         "category_id": category_id,
     }
-    resultado = {"ok": False, "item": None, "erro": None, "category_id": category_id,
-                 "catalog_product": None}
+    resultado = {
+        "ok": False,
+        "item": None,
+        "erro": None,
+        "category_id": category_id,
+        "catalog_product": None,
+    }
 
     try:
         if not category_id:
@@ -879,15 +923,17 @@ def anuncios(
     total_paginas = max(1, (total + por_pagina - 1) // por_pagina)
     pagina = max(1, min(pagina, total_paginas))
     inicio = (pagina - 1) * por_pagina
-    ctx.update({
-        "items": items[inicio : inicio + por_pagina],
-        "q": q,
-        "status_filtro": status,
-        "pagina": pagina,
-        "total_paginas": total_paginas,
-        "total_itens": total,
-        "cache_em": cache_em,
-    })
+    ctx.update(
+        {
+            "items": items[inicio : inicio + por_pagina],
+            "q": q,
+            "status_filtro": status,
+            "pagina": pagina,
+            "total_paginas": total_paginas,
+            "total_itens": total,
+            "cache_em": cache_em,
+        }
+    )
     return templates.TemplateResponse(request, "anuncios.html", ctx)
 
 
@@ -1025,7 +1071,11 @@ async def editar_anuncio(
         try:
             conteudo = await image_file.read()
             pic_id = meli.upload_picture(conteudo, image_file.filename, image_file.content_type)
-            atuais = [{"id": p["id"]} for p in (meli.get_item(item_id).get("pictures") or []) if p.get("id")]
+            atuais = [
+                {"id": p["id"]}
+                for p in (meli.get_item(item_id).get("pictures") or [])
+                if p.get("id")
+            ]
             atuais.append({"id": pic_id})
             meli.update_item(item_id, {"pictures": atuais})
         except Exception as exc:  # noqa: BLE001
@@ -1076,8 +1126,9 @@ def concorrencia_anuncio(request: Request, item_id: str):
     if redirect:
         return redirect
     ctx = _base_context(request)
-    ctx.update({"competidores": [], "resumo": None, "sugestao": None, "preco": 0,
-                "recomendacao": None})
+    ctx.update(
+        {"competidores": [], "resumo": None, "sugestao": None, "preco": 0, "recomendacao": None}
+    )
     try:
         item = meli.get_item(item_id)
         ctx["item"] = item
@@ -1104,7 +1155,9 @@ def concorrencia_anuncio(request: Request, item_id: str):
                 if preco > menor:
                     ctx["recomendacao"] = {
                         "valor": round(menor, 2),
-                        "motivo": f"Igualar o menor concorrente (R$ {menor:.2f}) para ganhar a compra.",
+                        "motivo": (
+                            f"Igualar o menor concorrente (R$ {menor:.2f}) para ganhar a compra."
+                        ),
                     }
         else:
             sugestao = meli.get_price_suggestion(item_id) or None
@@ -1183,14 +1236,16 @@ def vendas(request: Request, q: str = "", status: str = "", pagina: int = 1):
     except Exception as exc:  # noqa: BLE001
         ctx["error"] = f"Não foi possível carregar as vendas: {exc}"
     total_paginas = max(1, (total + por_pagina - 1) // por_pagina)
-    ctx.update({
-        "orders": orders,
-        "pagina": pagina,
-        "total_paginas": total_paginas,
-        "total_vendas": total,
-        "q": q,
-        "status_filtro": status,
-    })
+    ctx.update(
+        {
+            "orders": orders,
+            "pagina": pagina,
+            "total_paginas": total_paginas,
+            "total_vendas": total,
+            "q": q,
+            "status_filtro": status,
+        }
+    )
     return templates.TemplateResponse(request, "vendas.html", ctx)
 
 
@@ -1233,15 +1288,17 @@ def exportar_vendas(request: Request):
             itens = order.get("order_items") or []
             titulo = itens[0]["item"]["title"] if itens else ""
             qtd = sum(i.get("quantity", 0) for i in itens)
-            linhas.append([
-                (order.get("date_created") or "")[:10],
-                order.get("id", ""),
-                titulo,
-                qtd,
-                f"{order.get('total_amount', 0):.2f}",
-                order.get("status", ""),
-                comprador,
-            ])
+            linhas.append(
+                [
+                    (order.get("date_created") or "")[:10],
+                    order.get("id", ""),
+                    titulo,
+                    qtd,
+                    f"{order.get('total_amount', 0):.2f}",
+                    order.get("status", ""),
+                    comprador,
+                ]
+            )
     except Exception as exc:  # noqa: BLE001
         logger.exception("Falha ao exportar vendas")
         request.session["flash"] = f"Não foi possível exportar as vendas: {exc}"
@@ -1250,16 +1307,22 @@ def exportar_vendas(request: Request):
     return _csv_response("vendas.csv", cabecalho, linhas)
 
 
-
 @app.get("/vendas/{order_id}/mensagens")
 def mensagens_form(request: Request, order_id: str):
     redirect, _ = _require_ready(request)
     if redirect:
         return redirect
     ctx = _base_context(request)
-    ctx.update({"order_id": order_id, "messages": [], "pack_id": order_id,
-                "buyer_id": None, "seller_id": None,
-                "respostas": database.list_quick_replies()})
+    ctx.update(
+        {
+            "order_id": order_id,
+            "messages": [],
+            "pack_id": order_id,
+            "buyer_id": None,
+            "seller_id": None,
+            "respostas": database.list_quick_replies(),
+        }
+    )
     try:
         me = meli.get_me()
         ctx["seller_id"] = me["id"]
@@ -1313,9 +1376,7 @@ def pos_venda(request: Request):
             q = meli.search_questions(me["id"])
             perguntas = q.get("questions", [])
             for pergunta in perguntas:
-                pergunta["sugestao"] = _sugerir_resposta(
-                    pergunta.get("text", ""), respostas
-                )
+                pergunta["sugestao"] = _sugerir_resposta(pergunta.get("text", ""), respostas)
             ctx["questions"] = perguntas
         except Exception as exc:  # noqa: BLE001
             ctx["avisos"].append(f"Perguntas indisponíveis: {exc}")
@@ -1330,18 +1391,51 @@ def pos_venda(request: Request):
 
 
 _STOPWORDS = {
-    "de", "da", "do", "das", "dos", "que", "para", "com", "uma", "por", "não",
-    "nao", "meu", "minha", "voce", "você", "vcs", "tem", "esse", "essa", "este",
-    "esta", "como", "qual", "quanto", "seu", "sua", "isso", "ola", "olá", "boa",
-    "bom", "dia", "tarde", "noite", "obrigado", "obrigada", "gostaria", "saber",
+    "de",
+    "da",
+    "do",
+    "das",
+    "dos",
+    "que",
+    "para",
+    "com",
+    "uma",
+    "por",
+    "não",
+    "nao",
+    "meu",
+    "minha",
+    "voce",
+    "você",
+    "vcs",
+    "tem",
+    "esse",
+    "essa",
+    "este",
+    "esta",
+    "como",
+    "qual",
+    "quanto",
+    "seu",
+    "sua",
+    "isso",
+    "ola",
+    "olá",
+    "boa",
+    "bom",
+    "dia",
+    "tarde",
+    "noite",
+    "obrigado",
+    "obrigada",
+    "gostaria",
+    "saber",
 }
 
 
 def _tokens(texto: str) -> set[str]:
     return {
-        t
-        for t in re.findall(r"[a-zà-ú0-9]+", texto.lower())
-        if len(t) > 2 and t not in _STOPWORDS
+        t for t in re.findall(r"[a-zà-ú0-9]+", texto.lower()) if len(t) > 2 and t not in _STOPWORDS
     }
 
 
@@ -1359,9 +1453,7 @@ def _sugerir_resposta(pergunta: str, respostas: list[dict]) -> str:
 
 
 @app.post("/pos-venda/responder")
-def responder_pergunta(
-    request: Request, question_id: int = Form(...), text: str = Form(...)
-):
+def responder_pergunta(request: Request, question_id: int = Form(...), text: str = Form(...)):
     redirect, _ = _require_ready(request)
     if redirect:
         return redirect
@@ -1458,8 +1550,7 @@ def lucratividade(request: Request):
         for order in orders:
             bruto = float(order.get("total_amount") or 0)
             comissao = sum(
-                float(item.get("sale_fee") or 0)
-                for item in order.get("order_items", [])
+                float(item.get("sale_fee") or 0) for item in order.get("order_items", [])
             )
             liquido = bruto - comissao
             totais["bruto"] += bruto
@@ -1492,16 +1583,17 @@ def exportar_lucratividade(request: Request):
         for order in meli.list_all_orders(me["id"]):
             bruto = float(order.get("total_amount") or 0)
             comissao = sum(
-                float(item.get("sale_fee") or 0)
-                for item in order.get("order_items", [])
+                float(item.get("sale_fee") or 0) for item in order.get("order_items", [])
             )
-            linhas.append([
-                (order.get("date_created") or "")[:10],
-                order.get("id", ""),
-                f"{bruto:.2f}",
-                f"{comissao:.2f}",
-                f"{bruto - comissao:.2f}",
-            ])
+            linhas.append(
+                [
+                    (order.get("date_created") or "")[:10],
+                    order.get("id", ""),
+                    f"{bruto:.2f}",
+                    f"{comissao:.2f}",
+                    f"{bruto - comissao:.2f}",
+                ]
+            )
     except Exception as exc:  # noqa: BLE001
         logger.exception("Falha ao exportar lucratividade")
         request.session["flash"] = f"Não foi possível exportar: {exc}"
@@ -1541,7 +1633,9 @@ def tendencias(request: Request, categoria: str = "", termo: str = "", atualizar
             categoria = previsao.get("category_id", "")
             categoria_nome = previsao.get("category_name", "")
             if not categoria:
-                ctx["aviso"] = f"Não encontramos categoria para “{termo}”. Mostrando tendências gerais."
+                ctx["aviso"] = (
+                    f"Não encontramos categoria para “{termo}”. Mostrando tendências gerais."
+                )
         elif categoria:
             categoria_nome = meli.get_category_name(categoria)
 
@@ -1555,14 +1649,16 @@ def tendencias(request: Request, categoria: str = "", termo: str = "", atualizar
         cache_em = min(quando_cat, quando_tr)
     except Exception as exc:  # noqa: BLE001
         ctx["error"] = f"Não foi possível carregar as tendências: {exc}"
-    ctx.update({
-        "trends": trends,
-        "categorias": categorias,
-        "categoria": categoria,
-        "categoria_nome": categoria_nome,
-        "termo": termo,
-        "cache_em": cache_em,
-    })
+    ctx.update(
+        {
+            "trends": trends,
+            "categorias": categorias,
+            "categoria": categoria,
+            "categoria_nome": categoria_nome,
+            "termo": termo,
+            "cache_em": cache_em,
+        }
+    )
     return templates.TemplateResponse(request, "tendencias.html", ctx)
 
 
@@ -1603,9 +1699,7 @@ def promocoes(request: Request, atualizar: int = 0):
             items = meli.get_items_details(ids)
             ctx["campanhas"] = campanhas
             ctx["items"] = items
-            ctx["cache_em"] = _cache_gravar(
-                chave, {"campanhas": campanhas, "items": items}
-            )
+            ctx["cache_em"] = _cache_gravar(chave, {"campanhas": campanhas, "items": items})
     except Exception as exc:  # noqa: BLE001
         ctx["error"] = f"Não foi possível carregar as promoções: {exc}"
     return templates.TemplateResponse(request, "promocoes.html", ctx)
@@ -1711,8 +1805,7 @@ def agendamentos_criar(
         titulo = meli.get_item(item_id).get("title", "")
     except Exception:  # noqa: BLE001
         pass
-    database.add_task(tipo, item_id, executar_em, titulo,
-                      valor if tipo == "preco" else None)
+    database.add_task(tipo, item_id, executar_em, titulo, valor if tipo == "preco" else None)
     request.session["flash"] = "Ação agendada com sucesso."
     return _redirect("/agendamentos")
 
@@ -1756,4 +1849,3 @@ def respostas_delete(request: Request, reply_id: int):
     database.delete_quick_reply(reply_id)
     request.session["flash"] = "Resposta rápida excluída."
     return _redirect("/respostas")
-
