@@ -20,6 +20,23 @@
 {% if flash %}<div class="alert alert--ok" role="status">{{ flash }}</div>{% endif %}
 {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
 
+<form class="filtros" method="get" action="/vendas">
+    <label class="field field--inline">
+        <span>Buscar</span>
+        <input type="search" name="q" value="{{ q or '' }}" placeholder="Pedido, comprador ou produto…">
+    </label>
+    <label class="field field--inline">
+        <span>Status</span>
+        <select name="status">
+            <option value="">Todos</option>
+            <option value="paid" {% if status_filtro == 'paid' %}selected{% endif %}>Pagos</option>
+            <option value="cancelled" {% if status_filtro == 'cancelled' %}selected{% endif %}>Cancelados</option>
+        </select>
+    </label>
+    <button class="btn btn--ghost btn--sm" type="submit">Filtrar</button>
+    {% if q or status_filtro %}<a class="btn btn--ghost btn--sm" href="/vendas">Limpar</a>{% endif %}
+</form>
+
 <section class="card">
     {% if orders %}
     <table class="table">
@@ -50,9 +67,9 @@
     </table>
     {% if total_paginas and total_paginas > 1 %}
     <nav class="paginacao" aria-label="Paginação de vendas">
-        {% if pagina > 1 %}<a class="btn btn--ghost btn--sm" href="/vendas?pagina={{ pagina - 1 }}">‹ Anterior</a>{% endif %}
+        {% if pagina > 1 %}<a class="btn btn--ghost btn--sm" href="/vendas?q={{ q or '' }}&status={{ status_filtro or '' }}&pagina={{ pagina - 1 }}">‹ Anterior</a>{% endif %}
         <span class="muted">Página {{ pagina }} de {{ total_paginas }}</span>
-        {% if pagina < total_paginas %}<a class="btn btn--ghost btn--sm" href="/vendas?pagina={{ pagina + 1 }}">Próxima ›</a>{% endif %}
+        {% if pagina < total_paginas %}<a class="btn btn--ghost btn--sm" href="/vendas?q={{ q or '' }}&status={{ status_filtro or '' }}&pagina={{ pagina + 1 }}">Próxima ›</a>{% endif %}
     </nav>
     {% endif %}
     {% else %}

@@ -500,6 +500,11 @@ def get_item_description(item_id: str) -> str:
     return (data.get("plain_text") or data.get("text") or "").strip()
 
 
+def update_item_description(item_id: str, text: str) -> dict:
+    """Atualiza a descrição (texto plano) do anúncio."""
+    return api_put(f"/items/{item_id}/description", {"plain_text": text})
+
+
 def list_item_ids(user_id: int, limit: int = 50) -> list[str]:
     data = api_get(f"/users/{user_id}/items/search", {"limit": limit})
     return data.get("results", [])

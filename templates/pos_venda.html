@@ -22,6 +22,8 @@
     <section class="card">
         <h2>Perguntas <span class="badge">{{ questions|length }}</span></h2>
         {% if questions %}
+        <input type="search" class="list-filter" data-target="#lista-perguntas"
+               placeholder="Filtrar perguntas…" aria-label="Filtrar perguntas">
         <form class="bulkbar" method="post" action="/pos-venda/responder-massa" id="form-perguntas-massa"
               onsubmit="return confirm('Enviar esta resposta às perguntas selecionadas?');">
             {% if respostas %}
@@ -35,7 +37,7 @@
             <input type="text" name="text" required maxlength="2000" placeholder="Resposta para as selecionadas…">
             <button class="btn btn--primary btn--sm" type="submit">Responder selecionadas</button>
         </form>
-        <ul class="list">
+        <ul class="list" id="lista-perguntas">
             {% for q in questions %}
             <li>
                 {% if q.status == 'UNANSWERED' %}

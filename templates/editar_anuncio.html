@@ -19,7 +19,19 @@
 
 <section class="card">
     <p><strong>{{ item.title }}</strong> · <code>{{ item.id }}</code></p>
-    <form class="form" method="post" action="/anuncios/{{ item.id }}/editar">
+    {% if item.pictures %}
+    <div class="thumbs">
+        {% for p in item.pictures[:6] %}
+        <img class="thumbs__img" src="{{ p.secure_url or p.url }}" alt="Foto do anúncio" width="64" height="64">
+        {% endfor %}
+    </div>
+    {% endif %}
+    <form class="form" method="post" action="/anuncios/{{ item.id }}/editar" enctype="multipart/form-data">
+        <label class="field">
+            <span>Título</span>
+            <input type="text" name="title" value="{{ item.title }}" maxlength="60">
+            <small class="hint">Anúncios vinculados ao catálogo não permitem alterar o título.</small>
+        </label>
         <div class="row">
             <label class="field">
                 <span>Preço (R$)</span>
@@ -32,7 +44,16 @@
                        value="{{ item.available_quantity }}" required>
             </label>
         </div>
-        <button class="btn btn--primary" type="submit">Salvar</button>
+        <label class="field">
+            <span>Descrição</span>
+            <textarea name="description" rows="5" maxlength="4000" placeholder="Descreva o produto…">{{ descricao or '' }}</textarea>
+        </label>
+        <label class="field">
+            <span>Adicionar foto</span>
+            <input type="file" name="image_file" accept="image/*">
+            <small class="hint">A foto é anexada às atuais (não remove as existentes).</small>
+        </label>
+        <button class="btn btn--primary" type="submit">Salvar alterações</button>
     </form>
 </section>
 {% endblock %}

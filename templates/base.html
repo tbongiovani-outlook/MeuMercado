@@ -156,6 +156,21 @@
                 boxes.forEach(function (b) { b.checked = all.checked; });
             });
         })();
+
+        // Filtro de lista no cliente (ex.: perguntas do pós-venda).
+        (function () {
+            document.addEventListener("input", function (e) {
+                var campo = e.target;
+                if (!campo.classList || !campo.classList.contains("list-filter")) return;
+                var alvo = document.querySelector(campo.getAttribute("data-target"));
+                if (!alvo) return;
+                var termo = campo.value.trim().toLowerCase();
+                alvo.querySelectorAll(":scope > li").forEach(function (li) {
+                    var txt = (li.textContent || "").toLowerCase();
+                    li.style.display = (!termo || txt.indexOf(termo) !== -1) ? "" : "none";
+                });
+            });
+        })();
     </script>
 </body>
 </html>
