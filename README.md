@@ -317,7 +317,7 @@ curl -X POST \
 - [x] Responder perguntas direto pelo painel
 - [x] Editar preço/estoque do anúncio pelo painel
 - [x] Upload de imagem local ao publicar
-- [ ] Mensagens pós-venda por pedido (função pronta; falta a interface)
+- [x] Mensagens pós-venda por pedido (ler e responder)
 
 ---
 
