@@ -323,6 +323,11 @@ curl -X POST \
 - [x] Análise de concorrência de preço (catálogo) + taxa de conversão por anúncio
 - [x] Acessibilidade WCAG 2.2 AA e Fluent Design (foco, skip link, alt, aria, contraste, elevação)
 - [x] KPIs no painel principal (vendas, faturamento, ticket, perguntas, reclamações, estoque) + ações
+- [x] ⭐ **Diferencial:** tendências e palavras-chave em alta (Mercado Livre `/trends`)
+- [x] Alerta de estoque baixo com limite configurável (painel + configuração)
+- [x] Respostas rápidas (templates de mensagens) aplicáveis em pós-venda e conversas
+- [x] Duplicar anúncio (cópia criada já pausada para revisão)
+- [x] Edição em massa de preço e estoque (definir, aumentar/reduzir %)
 
 ---
 
