@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Entrar · Meu Mercado{% endblock %}
+
+{% block content %}
+<section class="card card--center">
+    <h1>Entrar</h1>
+    <p class="muted">Acesse com o usuário e a senha que você criou.</p>
+
+    {% if error %}
+    <div class="alert alert--error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="/entrar" class="form">
+        <label class="field">
+            <span>Usuário</span>
+            <input type="text" name="username" autocomplete="username" required autofocus>
+        </label>
+        <label class="field">
+            <span>Senha</span>
+            <input type="password" name="password" autocomplete="current-password" required>
+        </label>
+        <button class="btn btn--primary" type="submit">Entrar</button>
+    </form>
+</section>
+{% endblock %}

@@ -3,8 +3,9 @@
 
 {% block nav %}
 <nav class="nav">
-    {% if user %}<span class="nav__user">{{ user.nickname }}</span>{% endif %}
-    <a class="btn btn--ghost" href="/logout">Sair</a>
+    <span class="nav__user">👤 {{ username }}</span>
+    <a class="btn btn--ghost" href="/configuracao">Configuração</a>
+    <a class="btn btn--ghost" href="/sair">Sair</a>
 </nav>
 {% endblock %}
 
@@ -13,13 +14,37 @@
 <div class="alert alert--error">{{ error }}</div>
 {% endif %}
 
-{% if user %}
+{% if not configured %}
+<section class="card card--center">
+    <h1>Configure o Mercado Livre</h1>
+    <p class="muted">
+        Para começar, informe o <strong>Client ID</strong> e o <strong>Client Secret</strong>
+        da sua aplicação do Mercado Livre.
+    </p>
+    <a class="btn btn--primary" href="/configuracao">Ir para a configuração</a>
+</section>
+{% elif not connected %}
+<section class="card card--center">
+    <h1>Conecte sua conta</h1>
+    <p class="muted">
+        As credenciais já estão configuradas. Agora conecte sua conta de vendedor
+        do Mercado Livre para acompanhar anúncios, vendas e mais.
+    </p>
+    <a class="btn btn--primary" href="/mercadolivre/conectar">Conectar com o Mercado Livre</a>
+</section>
+{% else %}
+{% if ml_user %}
 <section class="card">
-    <h2>Conta</h2>
-    <p><strong>{{ user.nickname }}</strong> · ID {{ user.id }}</p>
-    {% if user.seller_reputation and user.seller_reputation.level_id %}
-    <p class="muted">Reputação: {{ user.seller_reputation.level_id }}</p>
-    {% endif %}
+    <div class="row">
+        <div>
+            <h2>Conta conectada</h2>
+            <p><strong>{{ ml_user.nickname }}</strong> · ID {{ ml_user.id }}</p>
+            {% if ml_user.seller_reputation and ml_user.seller_reputation.level_id %}
+            <p class="muted">Reputação: {{ ml_user.seller_reputation.level_id }}</p>
+            {% endif %}
+        </div>
+        <a class="btn btn--ghost" href="/mercadolivre/desconectar">Desconectar</a>
+    </div>
 </section>
 {% endif %}
 
@@ -59,4 +84,6 @@
         {% endif %}
     </section>
 </div>
+{% endif %}
 {% endblock %}
+

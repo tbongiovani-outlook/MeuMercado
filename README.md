@@ -49,9 +49,31 @@ Já existem ferramentas que atuam nesse espaço. Mapeamos as principais categori
 
 ---
 
+## 💻 Requisito de compatibilidade (multiplataforma)
+
+> **Obrigatório:** a solução **deve rodar tanto em Windows quanto em macOS**. Todas as
+> linguagens, bibliotecas, scripts e ferramentas escolhidos **precisam ter suporte
+> comprovado nos dois sistemas operacionais**.
+
+Diretrizes que o projeto segue para garantir isso:
+
+- **Público-alvo:** usuários finais rodando na **própria máquina** — a instalação e o uso
+  precisam ser simples, sem conhecimento técnico.
+- **Tecnologias multiplataforma:** só usamos linguagens/bibliotecas com suporte oficial a
+  Windows e macOS (ex.: Python, FastAPI, SQLite).
+- **Scripts de inicialização em duas versões:** para cada script fornecemos uma versão
+  Windows (`.ps1`/`.bat`) **e** uma versão macOS/Linux (`.sh`) equivalentes.
+- **Sem caminhos fixos de um SO:** usar caminhos relativos e utilitários da linguagem
+  (ex.: `pathlib`) em vez de comandos específicos de um sistema.
+- **Configuração pela interface:** o `Client ID` e o `Client Secret` podem ser informados
+  na própria tela do aplicativo (mais fácil que editar arquivos), funcionando igual nos dois SOs.
+
+---
+
 ## 🧰 Stack tecnológica (fácil de instalar)
 
-A escolha prioriza **facilidade de instalação** e execução local em Windows/macOS:
+A escolha prioriza **facilidade de instalação** e execução local em **Windows e macOS**
+(ambos suportados):
 
 - **Linguagem:** [Python 3.11+](https://www.python.org/downloads/) — instalador simples nos dois sistemas operacionais.
 - **Framework web:** [FastAPI](https://fastapi.tiangolo.com/) + [Uvicorn](https://www.uvicorn.org/) — API + páginas web em um único processo.
@@ -59,13 +81,39 @@ A escolha prioriza **facilidade de instalação** e execução local em Windows/
 - **Banco de dados:** [SQLite](https://www.sqlite.org/) — arquivo local, sem servidor para instalar.
 - **Templates/UI:** Jinja2 (HTML) — telas simples renderizadas pelo servidor.
 
-> Alternativa: **Node.js + Express** também é uma opção fácil de instalar. Caso prefira, avise que ajustamos o projeto.
+> Todas essas tecnologias têm suporte oficial a Windows e macOS.
+> Alternativa: **Node.js + Express** também é multiplataforma e fácil de instalar. Caso prefira, avise que ajustamos o projeto.
 
 ### Requisitos
 
-- Python 3.11 ou superior
+- Python 3.11 ou superior (Windows **ou** macOS)
 - Uma conta de vendedor no Mercado Livre
 - Uma aplicação criada no [DevCenter do Mercado Livre](https://developers.mercadolivre.com.br/devcenter)
+
+---
+
+## ▶️ Como rodar (fácil, 1 clique)
+
+Não é preciso saber programar. Os scripts cuidam de tudo (criam o ambiente,
+instalam as dependências e abrem o navegador):
+
+- **Windows:** dê duplo clique em **`iniciar.bat`** (ou clique com o botão direito em
+  `iniciar.ps1` → *Executar com PowerShell*).
+- **macOS/Linux:** no terminal, rode `bash iniciar.sh` (na primeira vez,
+  `chmod +x iniciar.sh` permite dar duplo clique depois).
+
+O aplicativo abre em **http://127.0.0.1:8000**.
+
+### Primeiro acesso (conta local)
+
+1. Na **primeira vez**, o app pede para você criar um **usuário e senha** — eles ficam
+   guardados **só na sua máquina**, com a senha protegida por **hash de mão única (PBKDF2)**
+   (nunca em texto puro).
+2. Depois de entrar, vá em **Configuração** e informe o **Client ID** e o **Client Secret**
+   da sua aplicação do Mercado Livre (armazenados localmente no banco SQLite).
+3. Clique em **Conectar com o Mercado Livre** para autorizar sua conta de vendedor.
+
+> Nos acessos seguintes, basta entrar com o usuário e a senha criados.
 
 ---
 
@@ -226,8 +274,11 @@ curl -X POST \
 
 - [x] Documentar o projeto e a integração (este README)
 - [x] Analisar soluções similares no mercado
-- [ ] Definir a estrutura do projeto (FastAPI + SQLite)
-- [ ] Implementar o fluxo OAuth (login → callback → armazenar tokens)
+- [x] Definir a estrutura do projeto (FastAPI + SQLite)
+- [x] Conta local no primeiro acesso (usuário + senha com hash PBKDF2)
+- [x] Tela de configuração do Client ID / Secret (armazenamento local)
+- [x] Scripts de inicialização para Windows e macOS (`iniciar.bat` / `iniciar.ps1` / `iniciar.sh`)
+- [x] Implementar o fluxo OAuth (conectar → callback → armazenar tokens)
 - [ ] Tela de anúncios (histórico + publicação)
 - [ ] Tela de vendas e entregas
 - [ ] ⭐ **Diferencial:** painel pós-venda unificado (mensagens + perguntas + reclamações)

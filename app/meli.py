@@ -13,12 +13,28 @@ _TIMEOUT = 30
 _REFRESH_MARGIN = 60
 
 
+def get_client_id() -> str:
+    return database.get_config("meli_client_id") or settings.meli_client_id
+
+
+def get_client_secret() -> str:
+    return database.get_config("meli_client_secret") or settings.meli_client_secret
+
+
+def get_redirect_uri() -> str:
+    return database.get_config("meli_redirect_uri") or settings.meli_redirect_uri
+
+
+def is_configured() -> bool:
+    return bool(get_client_id() and get_client_secret())
+
+
 def build_authorization_url(state: str) -> str:
     """Monta a URL para redirecionar o vendedor ao consentimento do Mercado Livre."""
     params = {
         "response_type": "code",
-        "client_id": settings.meli_client_id,
-        "redirect_uri": settings.meli_redirect_uri,
+        "client_id": get_client_id(),
+        "redirect_uri": get_redirect_uri(),
         "state": state,
     }
     return f"{settings.meli_auth_domain}/authorization?{urlencode(params)}"
@@ -28,10 +44,10 @@ def exchange_code(code: str) -> dict:
     """Troca o authorization code por um access token e persiste o resultado."""
     data = {
         "grant_type": "authorization_code",
-        "client_id": settings.meli_client_id,
-        "client_secret": settings.meli_client_secret,
+        "client_id": get_client_id(),
+        "client_secret": get_client_secret(),
         "code": code,
-        "redirect_uri": settings.meli_redirect_uri,
+        "redirect_uri": get_redirect_uri(),
     }
     token = _post_token(data)
     _persist(token)
@@ -42,8 +58,8 @@ def refresh_token(refresh: str) -> dict:
     """Usa o refresh token para obter um novo access token."""
     data = {
         "grant_type": "refresh_token",
-        "client_id": settings.meli_client_id,
-        "client_secret": settings.meli_client_secret,
+        "client_id": get_client_id(),
+        "client_secret": get_client_secret(),
         "refresh_token": refresh,
     }
     token = _post_token(data)

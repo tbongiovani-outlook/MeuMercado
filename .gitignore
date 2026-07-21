@@ -222,3 +222,6 @@ __marimo__/
 *.sqlite3
 .DS_Store
 Thumbs.db
+
+# Configurações locais do editor
+.vscode/

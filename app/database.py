@@ -37,6 +37,25 @@ def init_db() -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS app_user (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                username      TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                salt          TEXT NOT NULL,
+                created_at    INTEGER NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS app_config (
+                key   TEXT PRIMARY KEY,
+                value TEXT
+            )
+            """
+        )
 
 
 def save_token(
@@ -75,3 +94,60 @@ def get_token() -> Optional[dict]:
 def clear_tokens() -> None:
     with get_conn() as conn:
         conn.execute("DELETE FROM tokens")
+
+
+# --- Conta local do aplicativo (single-user) ---
+
+
+def has_user() -> bool:
+    with get_conn() as conn:
+        row = conn.execute("SELECT 1 FROM app_user LIMIT 1").fetchone()
+        return row is not None
+
+
+def create_user(username: str, password_hash: str, salt: str) -> int:
+    with get_conn() as conn:
+        cur = conn.execute(
+            """
+            INSERT INTO app_user (username, password_hash, salt, created_at)
+            VALUES (?, ?, ?, ?)
+            """,
+            (username, password_hash, salt, int(time.time())),
+        )
+        return int(cur.lastrowid)
+
+
+def get_user() -> Optional[dict]:
+    with get_conn() as conn:
+        row = conn.execute("SELECT * FROM app_user ORDER BY id LIMIT 1").fetchone()
+        return dict(row) if row else None
+
+
+def get_user_by_username(username: str) -> Optional[dict]:
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM app_user WHERE username = ?", (username,)
+        ).fetchone()
+        return dict(row) if row else None
+
+
+# --- Configuração da aplicação (chave/valor) ---
+
+
+def set_config(key: str, value: str) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            """
+            INSERT INTO app_config (key, value) VALUES (?, ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+            """,
+            (key, value),
+        )
+
+
+def get_config(key: str) -> Optional[str]:
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT value FROM app_config WHERE key = ?", (key,)
+        ).fetchone()
+        return row["value"] if row else None
