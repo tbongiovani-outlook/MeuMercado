@@ -34,6 +34,10 @@
                         {% if it.permalink %}<a class="btn btn--ghost btn--sm" href="{{ it.permalink }}" target="_blank" rel="noopener" aria-label="Ver {{ it.title }} no Mercado Livre (abre em nova aba)">Ver</a>{% endif %}
                         <a class="btn btn--ghost btn--sm" href="/anuncios/{{ it.id }}/qualidade" aria-label="Qualidade de {{ it.title }}">Qualidade</a>
                         <a class="btn btn--ghost btn--sm" href="/anuncios/{{ it.id }}/concorrencia" aria-label="Concorrência de {{ it.title }}">Concorrência</a>
+                        <form method="post" action="/anuncios/{{ it.id }}/duplicar"
+                              onsubmit="return confirm('Duplicar este anúncio? Uma cópia pausada será criada.');">
+                            <button class="btn btn--ghost btn--sm" type="submit" aria-label="Duplicar {{ it.title }}">Duplicar</button>
+                        </form>
                         {% if it.status != 'closed' %}
                         <a class="btn btn--ghost btn--sm" href="/anuncios/{{ it.id }}/editar" aria-label="Editar {{ it.title }}">Editar</a>
                         {% endif %}

@@ -390,6 +390,50 @@ def get_item(item_id: str) -> dict:
     return api_get(f"/items/{item_id}")
 
 
+def duplicate_item(item_id: str) -> dict:
+    """Cria um novo anúncio a partir de um existente (cópia)."""
+    src = get_item(item_id)
+    payload = {
+        "category_id": src.get("category_id"),
+        "price": src.get("price"),
+        "currency_id": src.get("currency_id") or "BRL",
+        "available_quantity": src.get("available_quantity") or 1,
+        "buying_mode": src.get("buying_mode") or "buy_it_now",
+        "condition": src.get("condition") or "new",
+        "listing_type_id": src.get("listing_type_id") or "gold_special",
+    }
+    pics = [{"id": p["id"]} for p in (src.get("pictures") or []) if p.get("id")]
+    if pics:
+        payload["pictures"] = pics
+
+    catalog_id = src.get("catalog_product_id")
+    if catalog_id and src.get("catalog_listing"):
+        payload["catalog_product_id"] = catalog_id
+        payload["catalog_listing"] = True
+    else:
+        payload["title"] = src.get("title", "")
+        attrs = _copy_attributes(src.get("attributes") or [])
+        if attrs:
+            payload["attributes"] = attrs
+
+    return api_post("/items", payload)
+
+
+def _copy_attributes(attributes: list[dict]) -> list[dict]:
+    """Extrai atributos reutilizáveis (com value_id ou value_name) para cópia."""
+    copiados = []
+    for attr in attributes:
+        entry = {"id": attr.get("id")}
+        if attr.get("value_id"):
+            entry["value_id"] = attr["value_id"]
+        elif attr.get("value_name"):
+            entry["value_name"] = attr["value_name"]
+        else:
+            continue
+        copiados.append(entry)
+    return copiados
+
+
 def get_item_description(item_id: str) -> str:
     """Retorna o texto da descrição do anúncio (vazio se não houver)."""
     try:

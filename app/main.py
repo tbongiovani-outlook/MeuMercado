@@ -606,6 +606,29 @@ def anuncio_status(request: Request, item_id: str, status: str = Form(...)):
     return _redirect("/anuncios")
 
 
+@app.post("/anuncios/{item_id}/duplicar")
+def duplicar_anuncio(request: Request, item_id: str):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    try:
+        novo = meli.duplicate_item(item_id)
+        novo_id = novo.get("id", "?")
+        if novo_id and novo_id != "?":
+            try:
+                meli.update_item_status(novo_id, "paused")
+            except Exception:  # noqa: BLE001
+                logger.warning("Duplicado %s criado, mas não foi possível pausar.", novo_id)
+        request.session["flash"] = (
+            f"Anúncio duplicado: {novo_id} (criado pausado, revise e ative)."
+        )
+        logger.info("Anúncio %s duplicado em %s", item_id, novo_id)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Falha ao duplicar anúncio")
+        request.session["flash"] = f"Não foi possível duplicar o anúncio: {exc}"
+    return _redirect("/anuncios")
+
+
 @app.get("/anuncios/{item_id}/editar")
 def editar_anuncio_form(request: Request, item_id: str):
     redirect, _ = _require_ready(request)
