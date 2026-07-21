@@ -4,6 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Meu Mercado{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -13,7 +16,22 @@
                 aria-expanded="false" aria-controls="sidebar">☰</button>
         <button class="collapse-btn" id="sidebar-collapse" type="button"
                 aria-label="Recolher menu" aria-pressed="false" title="Recolher menu">«</button>
-        <a class="brand" href="/">🛒 Meu Mercado</a>
+        <a class="brand" href="/">
+            <span class="brand__logo" aria-hidden="true">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="32" height="32" rx="9" fill="url(#mmg)"/>
+                    <path d="M9.5 11.5h13l-1.05 8.4A2.4 2.4 0 0 1 19.07 22h-6.14a2.4 2.4 0 0 1-2.38-2.1L9.5 11.5Z" stroke="#fff" stroke-width="1.7" stroke-linejoin="round"/>
+                    <path d="M13 12.2v-.7a3 3 0 0 1 6 0v.7" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/>
+                    <defs>
+                        <linearGradient id="mmg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#6366f1"/>
+                            <stop offset="1" stop-color="#4f46e5"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </span>
+            <span class="brand__name">Meu <b>Mercado</b></span>
+        </a>
     </header>
     <div class="layout">
         <div class="sidebar__overlay" id="sidebar-overlay" hidden></div>
