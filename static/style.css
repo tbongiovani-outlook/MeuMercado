@@ -343,6 +343,60 @@ h2 { margin-top: 0; font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01e
 .actions { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
 .actions form { margin: 0; }
 
+/* Botão apenas com ícone */
+.btn--icon {
+    padding: 0;
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    font-size: 1.05rem;
+    line-height: 1;
+}
+.btn--icon .ico { pointer-events: none; }
+
+/* Tooltip em hover/foco */
+.has-tip { position: relative; }
+.has-tip::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: #0f172a;
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    padding: 0.32rem 0.55rem;
+    border-radius: 7px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .12s ease, transform .12s ease;
+    z-index: 30;
+    box-shadow: var(--shadow-md, 0 6px 16px -6px rgba(16,24,40,.3));
+}
+.has-tip::before {
+    content: "";
+    position: absolute;
+    bottom: calc(100% + 3px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #0f172a;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .12s ease;
+    z-index: 30;
+}
+.has-tip:hover::after,
+.has-tip:focus-visible::after { opacity: 1; transform: translateX(-50%) translateY(0); }
+.has-tip:hover::before,
+.has-tip:focus-visible::before { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+    .has-tip::after { transition: none; }
+}
+
 .bulkbar {
     display: flex;
     align-items: flex-end;

@@ -70,9 +70,12 @@
             if (e.defaultPrevented) return;
             var btn = form.querySelector('button[type="submit"], button:not([type])');
             if (btn && !btn.disabled) {
-                btn.dataset.label = btn.textContent;
+                // Botões só com ícone: mantém o ícone, apenas desabilita.
+                if (!btn.classList.contains("btn--icon")) {
+                    btn.dataset.label = btn.textContent;
+                    btn.textContent = "Enviando…";
+                }
                 btn.disabled = true;
-                btn.textContent = "Enviando…";
             }
         });
 
