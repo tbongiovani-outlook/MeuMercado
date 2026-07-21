@@ -34,8 +34,7 @@ def _ficha_score(item: dict, category_attrs: list[dict]) -> tuple[int, int, int]
     importantes = [
         a
         for a in category_attrs
-        if (a.get("tags") or {}).get("required")
-        or (a.get("tags") or {}).get("catalog_required")
+        if (a.get("tags") or {}).get("required") or (a.get("tags") or {}).get("catalog_required")
     ]
     total = len(importantes)
     if total == 0:
@@ -91,9 +90,7 @@ def evaluate(item: dict, descricao: str, category_attrs: list[dict]) -> dict:
         {
             "ok": ficha_ok,
             "peso": "Alta",
-            "titulo": f"Ficha técnica ({preenchidos}/{total})"
-            if total
-            else "Ficha técnica",
+            "titulo": f"Ficha técnica ({preenchidos}/{total})" if total else "Ficha técnica",
             "dica": "Preencha todos os atributos obrigatórios e recomendados da "
             "categoria. Uma ficha completa melhora a busca e o posicionamento.",
         }

@@ -7,7 +7,6 @@ como chave primária, então evoluir para multiusuário depois é simples.
 import sqlite3
 import time
 from contextlib import contextmanager
-from typing import Optional
 
 from .config import settings
 
@@ -110,8 +109,8 @@ def init_db() -> None:
 def save_token(
     user_id: int,
     access_token: str,
-    refresh_token: Optional[str],
-    scope: Optional[str],
+    refresh_token: str | None,
+    scope: str | None,
     expires_in: int,
 ) -> None:
     now = int(time.time())
@@ -132,11 +131,9 @@ def save_token(
         )
 
 
-def get_token() -> Optional[dict]:
+def get_token() -> dict | None:
     with get_conn() as conn:
-        row = conn.execute(
-            "SELECT * FROM tokens ORDER BY updated_at DESC LIMIT 1"
-        ).fetchone()
+        row = conn.execute("SELECT * FROM tokens ORDER BY updated_at DESC LIMIT 1").fetchone()
         return dict(row) if row else None
 
 
@@ -166,17 +163,15 @@ def create_user(username: str, password_hash: str, salt: str) -> int:
         return int(cur.lastrowid)
 
 
-def get_user() -> Optional[dict]:
+def get_user() -> dict | None:
     with get_conn() as conn:
         row = conn.execute("SELECT * FROM app_user ORDER BY id LIMIT 1").fetchone()
         return dict(row) if row else None
 
 
-def get_user_by_username(username: str) -> Optional[dict]:
+def get_user_by_username(username: str) -> dict | None:
     with get_conn() as conn:
-        row = conn.execute(
-            "SELECT * FROM app_user WHERE username = ?", (username,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM app_user WHERE username = ?", (username,)).fetchone()
         return dict(row) if row else None
 
 
@@ -194,11 +189,9 @@ def set_config(key: str, value: str) -> None:
         )
 
 
-def get_config(key: str) -> Optional[str]:
+def get_config(key: str) -> str | None:
     with get_conn() as conn:
-        row = conn.execute(
-            "SELECT value FROM app_config WHERE key = ?", (key,)
-        ).fetchone()
+        row = conn.execute("SELECT value FROM app_config WHERE key = ?", (key,)).fetchone()
         return row["value"] if row else None
 
 
@@ -266,8 +259,9 @@ def list_snapshots(limit: int = 60) -> list[dict]:
         return [dict(r) for r in reversed(rows)]
 
 
-def add_task(tipo: str, item_id: str, executar_em: int,
-             titulo: str = "", valor: float | None = None) -> None:
+def add_task(
+    tipo: str, item_id: str, executar_em: int, titulo: str = "", valor: float | None = None
+) -> None:
     with get_conn() as conn:
         conn.execute(
             """
@@ -312,7 +306,7 @@ def cancel_task(task_id: int) -> None:
         )
 
 
-def cache_get(chave: str) -> Optional[dict]:
+def cache_get(chave: str) -> dict | None:
     """Retorna {'valor': <str json>, 'atualizado_em': <int>} ou None."""
     with get_conn() as conn:
         row = conn.execute(

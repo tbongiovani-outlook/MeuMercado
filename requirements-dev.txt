@@ -1,0 +1,5 @@
+# Dependências usadas apenas para testes, lint e CI.
+pytest>=8.0
+pytest-cov>=5.0
+ruff>=0.6
+pip-audit>=2.7

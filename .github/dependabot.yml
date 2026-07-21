@@ -1,0 +1,23 @@
+version: 2
+updates:
+  # Dependências Python (requirements.txt e requirements-dev.txt).
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+    commit-message:
+      prefix: "deps"
+
+  # Versões das próprias GitHub Actions usadas no CI.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - ci
+    commit-message:
+      prefix: "ci"

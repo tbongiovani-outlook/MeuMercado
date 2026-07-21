@@ -1,0 +1,41 @@
+[tool.pytest.ini_options]
+addopts = "-q --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=80"
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "app/__init__.py",
+    "app/meli.py",
+    "app/telemetry.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
+# SIM105: try/except/pass é legível o suficiente aqui.
+ignore = ["SIM105"]
+
+[tool.ruff.lint.flake8-bugbear]
+# Form/File/Depends/Query em argumentos padrão são idiomáticos no FastAPI.
+extend-immutable-calls = [
+    "fastapi.Form",
+    "fastapi.File",
+    "fastapi.Depends",
+    "fastapi.Query",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B008"]

@@ -1,5 +1,7 @@
 # Meu Mercado
 
+[![CI](https://github.com/tbongiovani-outlook/MeuMercado/actions/workflows/ci.yml/badge.svg)](https://github.com/tbongiovani-outlook/MeuMercado/actions/workflows/ci.yml)
+
 Sistema web para **gerenciar anúncios, vendas, entregas, mensagens e reclamações do Mercado Livre** em um único lugar. A aplicação roda **localmente** em uma máquina Windows ou macOS e se conecta à conta do vendedor no Mercado Livre por meio da **API oficial** (integração OAuth 2.0).
 
 > Status: ✅ **Funcional** — app implementado (FastAPI + SQLite) com instalador de 1 clique para Windows. Em evolução contínua.
