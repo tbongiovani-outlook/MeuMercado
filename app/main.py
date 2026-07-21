@@ -301,7 +301,8 @@ def _base_context(request: Request) -> dict:
     user = database.get_user()
     return {
         "username": user["username"] if user else "",
-        "error": request.session.pop("flash", None),
+        "error": None,
+        "flash": request.session.pop("flash", None),
     }
 
 
@@ -405,6 +406,25 @@ def anuncios(request: Request):
     return templates.TemplateResponse(request, "anuncios.html", ctx)
 
 
+@app.post("/anuncios/{item_id}/status")
+def anuncio_status(request: Request, item_id: str, status: str = Form(...)):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    if status not in {"active", "paused", "closed"}:
+        request.session["flash"] = "Status inválido."
+        return _redirect("/anuncios")
+    try:
+        meli.update_item_status(item_id, status)
+        rotulos = {"active": "reativado", "paused": "pausado", "closed": "encerrado"}
+        request.session["flash"] = f"Anúncio {item_id} {rotulos[status]}."
+        logger.info("Anúncio %s alterado para %s", item_id, status)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Falha ao alterar status do anúncio")
+        request.session["flash"] = f"Não foi possível alterar o anúncio: {exc}"
+    return _redirect("/anuncios")
+
+
 # ---------------------------------------------------------------------------
 # Vendas e entregas
 # ---------------------------------------------------------------------------
@@ -459,6 +479,23 @@ def pos_venda(request: Request):
     except Exception as exc:  # noqa: BLE001
         ctx["error"] = f"Não foi possível carregar o pós-venda: {exc}"
     return templates.TemplateResponse(request, "pos_venda.html", ctx)
+
+
+@app.post("/pos-venda/responder")
+def responder_pergunta(
+    request: Request, question_id: int = Form(...), text: str = Form(...)
+):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    try:
+        meli.answer_question(question_id, text.strip())
+        request.session["flash"] = "Resposta enviada."
+        logger.info("Pergunta %s respondida.", question_id)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Falha ao responder pergunta")
+        request.session["flash"] = f"Não foi possível responder: {exc}"
+    return _redirect("/pos-venda")
 
 
 # ---------------------------------------------------------------------------

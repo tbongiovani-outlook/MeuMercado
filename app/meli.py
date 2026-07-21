@@ -133,12 +133,43 @@ def api_post(path: str, payload: dict) -> dict:
     return resp.json()
 
 
+def api_put(path: str, payload: dict) -> dict:
+    """Faz um PUT autenticado (JSON) na API do Mercado Livre."""
+    access = get_valid_access_token()
+    if not access:
+        raise RuntimeError("Sem token válido. Faça login novamente.")
+    resp = httpx.put(
+        f"{settings.meli_api_base}{path}",
+        json=payload,
+        headers={
+            "Authorization": f"Bearer {access}",
+            "Content-Type": "application/json",
+        },
+        timeout=_TIMEOUT,
+    )
+    if resp.status_code >= 400:
+        _logger.warning("PUT %s -> %s: %s", path, resp.status_code, resp.text[:400])
+    resp.raise_for_status()
+    return resp.json()
+
+
 # ---------------------------------------------------------------------------
 # Recursos de alto nível (anúncios, vendas, envios, pós-venda, etc.)
 # ---------------------------------------------------------------------------
 
 def get_me() -> dict:
     return api_get("/users/me")
+
+
+def update_item_status(item_id: str, status: str) -> dict:
+    """Altera o status de um anúncio (active, paused ou closed)."""
+    return api_put(f"/items/{item_id}", {"status": status})
+
+
+def answer_question(question_id: int, text: str) -> dict:
+    """Responde a uma pergunta de um anúncio."""
+    return api_post("/answers", {"question_id": question_id, "text": text})
+
 
 
 def predict_category(title: str, site: str = "MLB") -> dict:

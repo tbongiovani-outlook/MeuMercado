@@ -6,6 +6,7 @@
 <h1>Central pós-venda</h1>
 <p class="muted">Perguntas e reclamações reunidas em um só lugar.</p>
 
+{% if flash %}<div class="alert alert--ok">{{ flash }}</div>{% endif %}
 {% if error %}<div class="alert alert--error">{{ error }}</div>{% endif %}
 {% for aviso in avisos %}
 <div class="alert alert--warn">{{ aviso }}</div>
@@ -20,6 +21,13 @@
             <li>
                 <strong>{{ q.text }}</strong><br>
                 <small class="muted">item {{ q.item_id }} · {{ (q.date_created or '')[:10] }} · {{ q.status }}</small>
+                {% if q.status == 'UNANSWERED' %}
+                <form class="reply" method="post" action="/pos-venda/responder">
+                    <input type="hidden" name="question_id" value="{{ q.id }}">
+                    <input type="text" name="text" required maxlength="2000" placeholder="Escreva a resposta…">
+                    <button class="btn btn--primary btn--sm" type="submit">Responder</button>
+                </form>
+                {% endif %}
             </li>
             {% endfor %}
         </ul>

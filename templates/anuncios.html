@@ -8,6 +8,7 @@
     <a class="btn btn--primary" href="/publicar">Publicar novo</a>
 </div>
 
+{% if flash %}<div class="alert alert--ok">{{ flash }}</div>{% endif %}
 {% if error %}<div class="alert alert--error">{{ error }}</div>{% endif %}
 
 <section class="card">
@@ -16,7 +17,7 @@
         <thead>
             <tr>
                 <th></th><th>Título</th><th>Preço</th><th>Estoque</th>
-                <th>Vendidos</th><th>Status</th><th></th>
+                <th>Vendidos</th><th>Status</th><th>Ações</th>
             </tr>
         </thead>
         <tbody>
@@ -28,7 +29,29 @@
                 <td>{{ it.available_quantity }}</td>
                 <td>{{ it.sold_quantity }}</td>
                 <td><span class="badge">{{ it.status }}</span></td>
-                <td>{% if it.permalink %}<a href="{{ it.permalink }}" target="_blank" rel="noopener">ver</a>{% endif %}</td>
+                <td>
+                    <div class="actions">
+                        {% if it.permalink %}<a class="btn btn--ghost btn--sm" href="{{ it.permalink }}" target="_blank" rel="noopener">Ver</a>{% endif %}
+                        {% if it.status == 'active' %}
+                        <form method="post" action="/anuncios/{{ it.id }}/status">
+                            <input type="hidden" name="status" value="paused">
+                            <button class="btn btn--ghost btn--sm" type="submit">Pausar</button>
+                        </form>
+                        {% elif it.status == 'paused' %}
+                        <form method="post" action="/anuncios/{{ it.id }}/status">
+                            <input type="hidden" name="status" value="active">
+                            <button class="btn btn--ghost btn--sm" type="submit">Reativar</button>
+                        </form>
+                        {% endif %}
+                        {% if it.status != 'closed' %}
+                        <form method="post" action="/anuncios/{{ it.id }}/status"
+                              onsubmit="return confirm('Encerrar este anúncio? A ação não pode ser desfeita.');">
+                            <input type="hidden" name="status" value="closed">
+                            <button class="btn btn--ghost btn--sm" type="submit">Encerrar</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
