@@ -281,3 +281,217 @@ def ml_desconectar(request: Request):
     database.clear_tokens()
     request.session["flash"] = "Conta do Mercado Livre desconectada."
     return _redirect("/")
+
+
+# ---------------------------------------------------------------------------
+# Helpers das páginas autenticadas
+# ---------------------------------------------------------------------------
+def _require_ready(request: Request):
+    """Retorna (erro_redirect, ml_user) — redireciona se faltar login/conexão."""
+    if not database.has_user():
+        return _redirect("/criar-conta"), None
+    if not _current_user_id(request):
+        return _redirect("/entrar"), None
+    if not meli.is_configured() or not database.get_token():
+        return _redirect("/"), None
+    return None, database.get_user()
+
+
+def _base_context(request: Request) -> dict:
+    user = database.get_user()
+    return {
+        "username": user["username"] if user else "",
+        "error": request.session.pop("flash", None),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Publicar anúncio
+# ---------------------------------------------------------------------------
+@app.get("/publicar")
+def publicar_form(request: Request):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    ctx = _base_context(request)
+    ctx.update({"resultado": None, "form": {}})
+    return templates.TemplateResponse(request, "publicar.html", ctx)
+
+
+@app.post("/publicar")
+def publicar(
+    request: Request,
+    title: str = Form(...),
+    price: float = Form(...),
+    available_quantity: int = Form(1),
+    condition: str = Form("new"),
+    listing_type_id: str = Form("free"),
+    image_url: str = Form(""),
+    marca: str = Form(""),
+    gtin: str = Form(""),
+    category_id: str = Form(""),
+):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+
+    ctx = _base_context(request)
+    form = {
+        "title": title,
+        "price": price,
+        "available_quantity": available_quantity,
+        "condition": condition,
+        "listing_type_id": listing_type_id,
+        "image_url": image_url,
+        "marca": marca,
+        "gtin": gtin,
+        "category_id": category_id,
+    }
+    resultado = {"ok": False, "item": None, "erro": None, "category_id": category_id,
+                 "catalog_product": None}
+
+    try:
+        if not category_id:
+            pred = meli.predict_category(title)
+            category_id = pred.get("category_id", "")
+            resultado["category_id"] = category_id
+        if not category_id:
+            raise RuntimeError("Não foi possível prever a categoria para este título.")
+
+        res = meli.publish(
+            title=title,
+            category_id=category_id,
+            price=price,
+            available_quantity=available_quantity,
+            condition=condition,
+            listing_type_id=listing_type_id,
+            brand=marca,
+            gtin=gtin,
+            image_url=image_url,
+        )
+        resultado["ok"] = True
+        resultado["item"] = res["item"]
+        resultado["catalog_product"] = res["catalog_product"]
+        logger.info(
+            "Anúncio publicado: %s (%s)",
+            res["item"].get("id"),
+            res["item"].get("title"),
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Falha ao publicar anúncio")
+        resultado["erro"] = str(exc)
+
+    ctx.update({"resultado": resultado, "form": form})
+    return templates.TemplateResponse(request, "publicar.html", ctx)
+
+
+# ---------------------------------------------------------------------------
+# Anúncios (histórico)
+# ---------------------------------------------------------------------------
+@app.get("/anuncios")
+def anuncios(request: Request):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    ctx = _base_context(request)
+    items = []
+    try:
+        me = meli.get_me()
+        ids = meli.list_item_ids(me["id"], limit=50)
+        items = meli.get_items_details(ids)
+    except Exception as exc:  # noqa: BLE001
+        ctx["error"] = f"Não foi possível carregar os anúncios: {exc}"
+    ctx["items"] = items
+    return templates.TemplateResponse(request, "anuncios.html", ctx)
+
+
+# ---------------------------------------------------------------------------
+# Vendas e entregas
+# ---------------------------------------------------------------------------
+@app.get("/vendas")
+def vendas(request: Request):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    ctx = _base_context(request)
+    orders = []
+    try:
+        me = meli.get_me()
+        orders = meli.search_orders(me["id"], limit=30)
+        for order in orders:
+            ship = order.get("shipping") or {}
+            ship_id = ship.get("id")
+            if ship_id:
+                try:
+                    detail = meli.get_shipment(ship_id)
+                    order["shipping_status"] = detail.get("status")
+                    order["shipping_substatus"] = detail.get("substatus")
+                except Exception:  # noqa: BLE001
+                    order["shipping_status"] = None
+    except Exception as exc:  # noqa: BLE001
+        ctx["error"] = f"Não foi possível carregar as vendas: {exc}"
+    ctx["orders"] = orders
+    return templates.TemplateResponse(request, "vendas.html", ctx)
+
+
+# ---------------------------------------------------------------------------
+# Pós-venda (perguntas + reclamações)
+# ---------------------------------------------------------------------------
+@app.get("/pos-venda")
+def pos_venda(request: Request):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    ctx = _base_context(request)
+    ctx.update({"questions": [], "claims": [], "avisos": []})
+    try:
+        me = meli.get_me()
+        try:
+            q = meli.search_questions(me["id"])
+            ctx["questions"] = q.get("questions", [])
+        except Exception as exc:  # noqa: BLE001
+            ctx["avisos"].append(f"Perguntas indisponíveis: {exc}")
+        try:
+            c = meli.search_claims()
+            ctx["claims"] = c.get("data", c.get("results", []))
+        except Exception as exc:  # noqa: BLE001
+            ctx["avisos"].append(f"Reclamações indisponíveis: {exc}")
+    except Exception as exc:  # noqa: BLE001
+        ctx["error"] = f"Não foi possível carregar o pós-venda: {exc}"
+    return templates.TemplateResponse(request, "pos_venda.html", ctx)
+
+
+# ---------------------------------------------------------------------------
+# Estatísticas (visitas)
+# ---------------------------------------------------------------------------
+@app.get("/estatisticas")
+def estatisticas(request: Request):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    ctx = _base_context(request)
+    linhas = []
+    try:
+        me = meli.get_me()
+        ids = meli.list_item_ids(me["id"], limit=20)
+        items = meli.get_items_details(ids)
+        for it in items:
+            visits = 0
+            try:
+                v = meli.get_item_visits(it["id"])
+                visits = v.get(it["id"], 0) if isinstance(v, dict) else 0
+            except Exception:  # noqa: BLE001
+                visits = 0
+            linhas.append(
+                {
+                    "id": it.get("id"),
+                    "title": it.get("title"),
+                    "visits": visits,
+                    "sold": it.get("sold_quantity", 0),
+                }
+            )
+    except Exception as exc:  # noqa: BLE001
+        ctx["error"] = f"Não foi possível carregar as estatísticas: {exc}"
+    ctx["linhas"] = linhas
+    return templates.TemplateResponse(request, "estatisticas.html", ctx)
+

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Pós-venda · Meu Mercado{% endblock %}
+{% block nav %}{% include "_nav.html" %}{% endblock %}
+
+{% block content %}
+<h1>Central pós-venda</h1>
+<p class="muted">Perguntas e reclamações reunidas em um só lugar.</p>
+
+{% if error %}<div class="alert alert--error">{{ error }}</div>{% endif %}
+{% for aviso in avisos %}
+<div class="alert alert--warn">{{ aviso }}</div>
+{% endfor %}
+
+<div class="grid">
+    <section class="card">
+        <h2>Perguntas <span class="badge">{{ questions|length }}</span></h2>
+        {% if questions %}
+        <ul class="list">
+            {% for q in questions %}
+            <li>
+                <strong>{{ q.text }}</strong><br>
+                <small class="muted">item {{ q.item_id }} · {{ (q.date_created or '')[:10] }} · {{ q.status }}</small>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted">Nenhuma pergunta pendente.</p>
+        {% endif %}
+    </section>
+
+    <section class="card">
+        <h2>Reclamações <span class="badge">{{ claims|length }}</span></h2>
+        {% if claims %}
+        <ul class="list">
+            {% for c in claims %}
+            <li>
+                <strong>{{ c.type or 'Reclamação' }}</strong>
+                <span class="badge">{{ c.status }}</span><br>
+                <small class="muted">id {{ c.id }} · {{ (c.date_created or '')[:10] }}</small>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted">Nenhuma reclamação aberta.</p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

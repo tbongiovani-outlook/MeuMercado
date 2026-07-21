@@ -1,13 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Painel · Meu Mercado{% endblock %}
 
-{% block nav %}
-<nav class="nav">
-    <span class="nav__user">👤 {{ username }}</span>
-    <a class="btn btn--ghost" href="/configuracao">Configuração</a>
-    <a class="btn btn--ghost" href="/sair">Sair</a>
-</nav>
-{% endblock %}
+{% block nav %}{% include "_nav.html" %}{% endblock %}
 
 {% block content %}
 {% if error %}

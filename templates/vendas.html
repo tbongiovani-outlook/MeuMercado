@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Vendas · Meu Mercado{% endblock %}
+{% block nav %}{% include "_nav.html" %}{% endblock %}
+
+{% block content %}
+<h1>Vendas e entregas <span class="badge">{{ orders|length }}</span></h1>
+
+{% if error %}<div class="alert alert--error">{{ error }}</div>{% endif %}
+
+<section class="card">
+    {% if orders %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Pedido</th><th>Data</th><th>Status</th>
+                <th>Total</th><th>Entrega</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td><code>{{ order.id }}</code></td>
+                <td>{{ (order.date_created or '')[:10] }}</td>
+                <td><span class="badge">{{ order.status }}</span></td>
+                <td>{{ order.currency_id }} {{ order.total_amount }}</td>
+                <td>
+                    {% if order.shipping_status %}
+                        {{ order.shipping_status }}{% if order.shipping_substatus %} · {{ order.shipping_substatus }}{% endif %}
+                    {% else %}
+                        <span class="muted">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted">Nenhuma venda encontrada.</p>
+    {% endif %}
+</section>
+{% endblock %}

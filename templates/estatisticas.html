@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Estatísticas · Meu Mercado{% endblock %}
+{% block nav %}{% include "_nav.html" %}{% endblock %}
+
+{% block content %}
+<h1>Estatísticas dos anúncios</h1>
+<p class="muted">Visitas e vendas por anúncio.</p>
+
+{% if error %}<div class="alert alert--error">{{ error }}</div>{% endif %}
+
+<section class="card">
+    {% if linhas %}
+    <table class="table">
+        <thead>
+            <tr><th>Anúncio</th><th>Visitas</th><th>Vendidos</th></tr>
+        </thead>
+        <tbody>
+            {% for l in linhas %}
+            <tr>
+                <td>{{ l.title }}<br><small class="muted"><code>{{ l.id }}</code></small></td>
+                <td>{{ l.visits }}</td>
+                <td>{{ l.sold }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted">Sem dados de estatísticas.</p>
+    {% endif %}
+</section>
+{% endblock %}

@@ -113,6 +113,257 @@ def api_get(path: str, params: dict | None = None) -> dict:
     return resp.json()
 
 
+def api_post(path: str, payload: dict) -> dict:
+    """Faz um POST autenticado (JSON) na API do Mercado Livre."""
+    access = get_valid_access_token()
+    if not access:
+        raise RuntimeError("Sem token válido. Faça login novamente.")
+    resp = httpx.post(
+        f"{settings.meli_api_base}{path}",
+        json=payload,
+        headers={
+            "Authorization": f"Bearer {access}",
+            "Content-Type": "application/json",
+        },
+        timeout=_TIMEOUT,
+    )
+    if resp.status_code >= 400:
+        _logger.warning("POST %s -> %s: %s", path, resp.status_code, resp.text[:400])
+    resp.raise_for_status()
+    return resp.json()
+
+
+# ---------------------------------------------------------------------------
+# Recursos de alto nível (anúncios, vendas, envios, pós-venda, etc.)
+# ---------------------------------------------------------------------------
+
+def get_me() -> dict:
+    return api_get("/users/me")
+
+
+def predict_category(title: str, site: str = "MLB") -> dict:
+    """Sugere categoria e domínio a partir do título (domain discovery)."""
+    results = api_get(
+        f"/sites/{site}/domain_discovery/search", {"limit": 1, "q": title}
+    )
+    return results[0] if isinstance(results, list) and results else {}
+
+
+def get_category_attributes(category_id: str) -> list[dict]:
+    """Atributos de uma categoria (endpoint público, sem autenticação)."""
+    resp = httpx.get(
+        f"{settings.meli_api_base}/categories/{category_id}/attributes",
+        timeout=_TIMEOUT,
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+def _gtin_attributes(all_attrs: list[dict], gtin: str) -> list[dict]:
+    """Resolve o(s) atributo(s) de GTIN: código informado ou motivo de vazio."""
+    gtin_attr = next((a for a in all_attrs if a.get("id") == "GTIN"), None)
+    if not gtin_attr or not (gtin_attr.get("tags") or {}).get("conditional_required"):
+        return []
+    if gtin.strip():
+        return [{"id": "GTIN", "value_name": gtin.strip()}]
+
+    reason = next((a for a in all_attrs if a.get("id") == "EMPTY_GTIN_REASON"), None)
+    values = (reason or {}).get("values") or []
+    chosen = next(
+        (v for v in values if "não tem código" in v.get("name", "").lower()),
+        values[-1] if values else None,
+    )
+    # Para publicar sem código de barras, o ML exige o atributo GTIN presente
+    # (com valor nulo) + o motivo do GTIN vazio.
+    result = [{"id": "GTIN", "value_name": None}]
+    if chosen:
+        result.append({"id": "EMPTY_GTIN_REASON", "value_id": chosen["id"]})
+    return result
+
+
+def build_required_attributes(category_id: str, brand: str, gtin: str = "") -> list[dict]:
+    """Monta os atributos obrigatórios da categoria com valores razoáveis."""
+    all_attrs = get_category_attributes(category_id)
+    attrs: list[dict] = []
+
+    for attr in all_attrs:
+        if not (attr.get("tags") or {}).get("required"):
+            continue
+        attr_id = attr.get("id")
+        allowed = attr.get("values") or []
+        if attr_id == "BRAND":
+            attrs.append({"id": "BRAND", "value_name": brand or "Genérica"})
+        elif allowed:
+            attrs.append({"id": attr_id, "value_id": allowed[0]["id"]})
+        else:
+            attrs.append({"id": attr_id, "value_name": brand or "Não especificado"})
+
+    attrs.extend(_gtin_attributes(all_attrs, gtin))
+    return attrs
+
+
+
+def publish_item(payload: dict) -> dict:
+    """Publica um novo anúncio (POST /items)."""
+    return api_post("/items", payload)
+
+
+def publish_item_smart(base: dict, title: str) -> dict:
+    """Publica tentando com 'title'; se a categoria exigir 'family_name', tenta assim."""
+    try:
+        return publish_item({**base, "title": title})
+    except httpx.HTTPStatusError as exc:
+        body = exc.response.text if exc.response is not None else ""
+        if "family_name" in body:
+            return publish_item({**base, "family_name": title})
+        raise
+
+
+def search_catalog_products(query: str, limit: int = 10) -> list[dict]:
+    """Busca produtos no catálogo do Mercado Livre."""
+    data = api_get(
+        "/products/search",
+        {"site_id": "MLB", "status": "active", "q": query, "limit": limit},
+    )
+    return data.get("results", [])
+
+
+def publish_catalog_item(
+    catalog_product_id: str,
+    price: float,
+    quantity: int,
+    listing_type_id: str,
+    condition: str = "new",
+    category_id: str = "",
+) -> dict:
+    """Publica um anúncio vinculado a um produto de catálogo existente."""
+    payload = {
+        "catalog_product_id": catalog_product_id,
+        "catalog_listing": True,
+        "price": price,
+        "currency_id": "BRL",
+        "available_quantity": quantity,
+        "listing_type_id": listing_type_id,
+        "condition": condition,
+    }
+    if category_id:
+        payload["category_id"] = category_id
+    return publish_item(payload)
+
+
+def publish(
+    *,
+    title: str,
+    category_id: str,
+    price: float,
+    available_quantity: int,
+    condition: str,
+    listing_type_id: str,
+    brand: str = "",
+    gtin: str = "",
+    image_url: str = "",
+) -> dict:
+    """Publica um anúncio de forma resiliente.
+
+    1) Tenta a publicação normal (com atributos obrigatórios da categoria);
+    2) se a categoria exigir catálogo/GTIN, busca o produto no catálogo e
+       publica vinculado a ele.
+
+    Retorna ``{"item": <resposta>, "catalog_product": <produto|None>}``.
+    """
+    base = {
+        "category_id": category_id,
+        "price": price,
+        "currency_id": "BRL",
+        "available_quantity": available_quantity,
+        "buying_mode": "buy_it_now",
+        "condition": condition,
+        "listing_type_id": listing_type_id,
+        "attributes": build_required_attributes(category_id, brand, gtin),
+    }
+    if image_url.strip():
+        base["pictures"] = [{"source": image_url.strip()}]
+
+    try:
+        return {"item": publish_item_smart(base, title.strip()), "catalog_product": None}
+    except httpx.HTTPStatusError as exc:
+        body = exc.response.text if exc.response is not None else ""
+        needs_catalog = "GTIN" in body or "catalog" in body.lower()
+        if not needs_catalog:
+            raise
+        produtos = search_catalog_products(title)
+        if not produtos:
+            raise
+        escolhido = produtos[0]
+        item = publish_catalog_item(
+            escolhido["id"],
+            price,
+            available_quantity,
+            listing_type_id,
+            condition,
+            category_id,
+        )
+        return {"item": item, "catalog_product": escolhido}
+
+
+def get_item(item_id: str) -> dict:
+    return api_get(f"/items/{item_id}")
+
+
+def list_item_ids(user_id: int, limit: int = 50) -> list[str]:
+    data = api_get(f"/users/{user_id}/items/search", {"limit": limit})
+    return data.get("results", [])
+
+
+def get_items_details(item_ids: list[str]) -> list[dict]:
+    """Busca detalhes de vários itens de uma vez (multiget)."""
+    if not item_ids:
+        return []
+    ids = ",".join(item_ids[:20])
+    attrs = "id,title,price,available_quantity,sold_quantity,status,permalink,thumbnail"
+    data = api_get("/items", {"ids": ids, "attributes": attrs})
+    return [row.get("body", {}) for row in data if row.get("code") == 200]
+
+
+def search_orders(seller_id: int, limit: int = 30) -> list[dict]:
+    data = api_get(
+        "/orders/search",
+        {"seller": seller_id, "sort": "date_desc", "limit": limit},
+    )
+    return data.get("results", [])
+
+
+def get_shipment(shipment_id: int) -> dict:
+    return api_get(f"/shipments/{shipment_id}")
+
+
+def search_questions(seller_id: int, status: str = "UNANSWERED") -> dict:
+    """Perguntas recebidas nos anúncios do vendedor."""
+    return api_get(
+        "/questions/search",
+        {"seller_id": seller_id, "status": status, "sort_fields": "date_created"},
+    )
+
+
+def get_pack_messages(pack_id: int, user_id: int) -> dict:
+    """Mensagens pós-venda de um pack/pedido."""
+    return api_get(f"/messages/packs/{pack_id}/sellers/{user_id}")
+
+
+def search_claims(limit: int = 20) -> dict:
+    """Reclamações do vendedor (pós-venda)."""
+    return api_get("/post-purchase/v1/claims/search", {"limit": limit})
+
+
+def get_item_visits(item_id: str) -> dict:
+    return api_get("/visits/items", {"ids": item_id})
+
+
+def get_billing_summary(user_id: int) -> dict:
+    """Resumo de faturamento/comissões (saldo da conta)."""
+    return api_get(f"/users/{user_id}/mercadopago_account/balance")
+
+
 def _post_token(data: dict) -> dict:
     resp = httpx.post(
         f"{settings.meli_api_base}/oauth/token",

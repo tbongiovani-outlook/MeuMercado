@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Publicar anúncio · Meu Mercado{% endblock %}
+{% block nav %}{% include "_nav.html" %}{% endblock %}
+
+{% block content %}
+<h1>Publicar anúncio</h1>
+
+{% if error %}<div class="alert alert--error">{{ error }}</div>{% endif %}
+
+{% if resultado %}
+    {% if resultado.ok %}
+    <div class="alert alert--ok">
+        Anúncio publicado com sucesso!
+        <strong>{{ resultado.item.id }}</strong>
+        {% if resultado.item.permalink %}
+        — <a href="{{ resultado.item.permalink }}" target="_blank" rel="noopener">ver no Mercado Livre</a>
+        {% endif %}
+        {% if resultado.catalog_product %}
+        <br><small>Vinculado ao produto de catálogo:
+            <strong>{{ resultado.catalog_product.name }}</strong>
+            (<code>{{ resultado.catalog_product.id }}</code>)</small>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="alert alert--error">
+        Não foi possível publicar: {{ resultado.erro }}
+        {% if resultado.category_id %}<br><small>Categoria prevista: <code>{{ resultado.category_id }}</code></small>{% endif %}
+    </div>
+    {% endif %}
+{% endif %}
+
+<section class="card">
+    <form class="form" method="post" action="/publicar">
+        <label class="field">
+            <span>Título do anúncio</span>
+            <input type="text" name="title" required value="{{ form.title or '' }}"
+                   placeholder="Ex.: Água Mineral Minalba 1 Litro">
+        </label>
+
+        <div class="row">
+            <label class="field">
+                <span>Preço (R$)</span>
+                <input type="number" step="0.01" min="0" name="price" required
+                       value="{{ form.price or '' }}" placeholder="10000">
+            </label>
+            <label class="field">
+                <span>Quantidade</span>
+                <input type="number" min="1" name="available_quantity"
+                       value="{{ form.available_quantity or 1 }}">
+            </label>
+        </div>
+
+        <div class="row">
+            <label class="field">
+                <span>Condição</span>
+                <select name="condition">
+                    <option value="new" {% if form.condition == 'used' %}{% else %}selected{% endif %}>Novo</option>
+                    <option value="used" {% if form.condition == 'used' %}selected{% endif %}>Usado</option>
+                </select>
+            </label>
+            <label class="field">
+                <span>Tipo de anúncio</span>
+                <select name="listing_type_id">
+                    <option value="free" {% if form.listing_type_id in (None, '', 'free') %}selected{% endif %}>Grátis</option>
+                    <option value="gold_special" {% if form.listing_type_id == 'gold_special' %}selected{% endif %}>Clássico</option>
+                    <option value="gold_pro" {% if form.listing_type_id == 'gold_pro' %}selected{% endif %}>Premium</option>
+                </select>
+            </label>
+        </div>
+
+        <label class="field">
+            <span>URL da imagem</span>
+            <input type="url" name="image_url" value="{{ form.image_url or '' }}"
+                   placeholder="https://.../foto.jpg">
+        </label>
+
+        <label class="field">
+            <span>Marca</span>
+            <input type="text" name="marca" value="{{ form.marca or '' }}"
+                   placeholder="Ex.: Minalba">
+        </label>
+
+        <label class="field">
+            <span>Código de barras (GTIN/EAN) — deixe vazio se não tiver</span>
+            <input type="text" name="gtin" value="{{ form.gtin or '' }}"
+                   placeholder="Ex.: 7891234567890">
+        </label>
+
+        <label class="field">
+            <span>Categoria (opcional — deixe vazio para prever pelo título)</span>
+            <input type="text" name="category_id" value="{{ form.category_id or '' }}"
+                   placeholder="MLB1234">
+        </label>
+
+        <button class="btn btn--primary" type="submit">Publicar</button>
+    </form>
+</section>
+{% endblock %}

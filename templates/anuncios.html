@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Anúncios · Meu Mercado{% endblock %}
+{% block nav %}{% include "_nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <h1>Meus anúncios <span class="badge">{{ items|length }}</span></h1>
+    <a class="btn btn--primary" href="/publicar">Publicar novo</a>
+</div>
+
+{% if error %}<div class="alert alert--error">{{ error }}</div>{% endif %}
+
+<section class="card">
+    {% if items %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th></th><th>Título</th><th>Preço</th><th>Estoque</th>
+                <th>Vendidos</th><th>Status</th><th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for it in items %}
+            <tr>
+                <td>{% if it.thumbnail %}<img src="{{ it.thumbnail }}" alt="" width="40" height="40">{% endif %}</td>
+                <td>{{ it.title }}</td>
+                <td>{{ it.price }}</td>
+                <td>{{ it.available_quantity }}</td>
+                <td>{{ it.sold_quantity }}</td>
+                <td><span class="badge">{{ it.status }}</span></td>
+                <td>{% if it.permalink %}<a href="{{ it.permalink }}" target="_blank" rel="noopener">ver</a>{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted">Nenhum anúncio encontrado.</p>
+    {% endif %}
+</section>
+{% endblock %}
