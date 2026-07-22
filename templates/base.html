@@ -7,6 +7,21 @@
     <meta name="description" content="Painel local para vendedores do Mercado Livre: anúncios, vendas, pós-venda, preços e tendências em um só lugar.">
     <meta name="theme-color" content="#4f46e5">
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="/static/manifest.webmanifest">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Meu Mercado">
+    <script>
+        // Aplica o tema salvo ANTES da renderização (evita flash de tema errado).
+        (function () {
+            try {
+                var t = localStorage.getItem("mm_theme");
+                if (!t) {
+                    t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+                }
+                document.documentElement.setAttribute("data-theme", t);
+            } catch (e) { /* ignora ambientes sem localStorage */ }
+        })();
+    </script>
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Meu Mercado">
     <meta property="og:title" content="Meu Mercado">
@@ -42,6 +57,16 @@
             <span class="brand__name">Meu <b>Mercado</b></span>
         </a>
         <span class="topbar__spacer"></span>
+        <button class="topbar__btn" id="notif-toggle" type="button"
+                aria-pressed="false" title="Ativar notificações no computador"
+                aria-label="Ativar notificações no computador" hidden>
+            <span aria-hidden="true">🔔</span>
+        </button>
+        <button class="topbar__btn" id="theme-toggle" type="button"
+                aria-pressed="false" title="Alternar tema claro/escuro (t)"
+                aria-label="Alternar tema claro/escuro">
+            <span aria-hidden="true" id="theme-icon">🌙</span>
+        </button>
         {% if request.session.get('user_id') %}
         <a class="topbar__logout" href="/sair" title="Sair do sistema">
             <span class="ico" aria-hidden="true">⏻</span><span class="txt">Sair</span>
@@ -60,6 +85,30 @@
                 <small>Meu Mercado · integração com a API do Mercado Livre</small>
             </footer>
         </main>
+    </div>
+    <div class="shortcuts" id="shortcuts" role="dialog" aria-modal="true"
+         aria-labelledby="shortcuts-title" hidden>
+        <div class="shortcuts__dialog">
+            <div class="shortcuts__head">
+                <h2 id="shortcuts-title">Atalhos de teclado</h2>
+                <button class="shortcuts__close" id="shortcuts-close" type="button"
+                        aria-label="Fechar">✕</button>
+            </div>
+            <ul class="shortcuts__list">
+                <li><span>Ir para o Painel</span><span><kbd>g</kbd> <kbd>h</kbd></span></li>
+                <li><span>Ir para a Caixa de entrada</span><span><kbd>g</kbd> <kbd>i</kbd></span></li>
+                <li><span>Ir para Anúncios</span><span><kbd>g</kbd> <kbd>a</kbd></span></li>
+                <li><span>Ir para Publicar</span><span><kbd>g</kbd> <kbd>n</kbd></span></li>
+                <li><span>Ir para Promoções</span><span><kbd>g</kbd> <kbd>r</kbd></span></li>
+                <li><span>Ir para Vendas</span><span><kbd>g</kbd> <kbd>v</kbd></span></li>
+                <li><span>Ir para Pós-venda</span><span><kbd>g</kbd> <kbd>p</kbd></span></li>
+                <li><span>Ir para Agendamentos</span><span><kbd>g</kbd> <kbd>d</kbd></span></li>
+                <li><span>Ir para Configuração</span><span><kbd>g</kbd> <kbd>c</kbd></span></li>
+                <li><span>Focar filtro/busca da tela</span><span><kbd>/</kbd></span></li>
+                <li><span>Alternar tema claro/escuro</span><span><kbd>t</kbd></span></li>
+                <li><span>Abrir/fechar esta ajuda</span><span><kbd>?</kbd></span></li>
+            </ul>
+        </div>
     </div>
     <script>
         // Evita envio duplicado e dá feedback em formulários (boa prática de UX).
@@ -172,5 +221,6 @@
             });
         })();
     </script>
+    <script src="/static/app.js" defer></script>
 </body>
 </html>
