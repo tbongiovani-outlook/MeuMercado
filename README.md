@@ -418,7 +418,23 @@ curl -X POST \
 - [x] Tratamento de rate limit (429) com retentativa/backoff
 - [x] Aplicativo instalável (PWA) e notificações desktop
 - [x] Sugestão de resposta com **IA local** (Ollama — opcional, gratuito e 100% offline)
+- [x] Central de ajuda no app (guia de configuração e de ajuste do Ollama)
 - [ ] Multi-conta do Mercado Livre
+
+### 🧠 Próximas ideias com IA local (Ollama)
+
+Recursos opcionais que aproveitam o Ollama já integrado. **Todos podem ser ligados ou
+desligados**: com a IA ativa usam o modelo local; sem ela (ou com o Ollama parado), o app
+mantém o comportamento atual (heurística) ou simplesmente não exibe o botão.
+
+- [ ] Gerar **descrição do anúncio** a partir do título e atributos (Publicar/Editar)
+- [ ] Sugerir **título mais vendável (SEO)** com base no checklist de Qualidade
+- [ ] **Reescrever o anúncio** transformando o índice de Qualidade em melhorias concretas
+- [ ] **Classificar e priorizar perguntas** (entrega, preço, disponibilidade) por urgência
+- [ ] Sugerir **resposta a reclamações** do pós-venda com tom mais cuidadoso
+- [ ] **Resumo do dia** em linguagem natural (vendas, perguntas pendentes, estoque baixo)
+- [ ] **Gerar variações** de respostas rápidas a partir de um modelo
+- [ ] **Assistente de vendas**: caixa para tirar dúvidas sobre vender no Mercado Livre
 
 ---
 
