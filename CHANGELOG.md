@@ -5,6 +5,10 @@ Registro das mudanças implementadas (gerado automaticamente a cada merge na `ma
 <!-- novas-entradas -->
 ## 2026-07-22
 
+- fix: titulo IA nao termina com conector solto e prompt pede titulo mais curto (2fc9506)
+
+## 2026-07-22
+
 - fix: campo Descricao na tela de Publicar e titulo IA sem cortar palavra (5677cd0)
 
 ## 2026-07-22
