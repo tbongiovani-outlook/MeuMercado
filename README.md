@@ -39,6 +39,7 @@ Um usuário que vende no Mercado Livre autentica-se em **Meu Mercado**, que por 
 | **Entregas** | Status de envio e rastreamento | `GET /shipments/{id}` |
 | **Mensagens** | Perguntas de clientes e mensagens pós-venda | `GET /questions/search`, `GET /messages/...` |
 | **Reclamações** | Acompanhar e responder reclamações e devoluções | `GET /post-purchase/v1/claims/search` |
+| **Sugestão de resposta (IA local)** | Rascunho de resposta a perguntas/mensagens com IA offline | [Ollama](https://ollama.com) local (`/api/generate`) |
 
 > Estas são a base. O app já vai além: pós-venda unificado, lucratividade real, tendências, promoções, respostas rápidas, edição em massa, agendamento de ações e mais — veja a lista completa em **[Próximos passos](#-próximos-passos)**.
 
@@ -100,6 +101,7 @@ A escolha prioriza **facilidade de instalação** e execução local em **Window
 - **Cliente HTTP:** [httpx](https://www.python-httpx.org/) — para chamar a API do Mercado Livre.
 - **Banco de dados:** [SQLite](https://www.sqlite.org/) — arquivo local, sem servidor para instalar.
 - **Templates/UI:** Jinja2 (HTML) — telas simples renderizadas pelo servidor.
+- **IA local (opcional):** [Ollama](https://ollama.com) — sugestões de resposta offline, gratuitas e sem GPU obrigatória.
 
 > Todas essas tecnologias têm suporte oficial a Windows e macOS.
 > Alternativa: **Node.js + Express** também é multiplataforma e fácil de instalar. Caso prefira, avise que ajustamos o projeto.
@@ -134,6 +136,36 @@ O aplicativo abre em **http://127.0.0.1:8000**.
 3. Clique em **Conectar com o Mercado Livre** para autorizar sua conta de vendedor.
 
 > Nos acessos seguintes, basta entrar com o usuário e a senha criados.
+
+---
+
+## 🤖 Sugestão de resposta com IA local (opcional)
+
+O app pode **sugerir respostas** a perguntas e mensagens usando um modelo de IA que roda
+**na sua própria máquina**, via [Ollama](https://ollama.com). É **opcional, gratuito e
+100% offline** — os dados do cliente **nunca saem do computador**. Se estiver desligado (ou
+o Ollama não estiver em execução), o app continua sugerindo por **palavras-chave** das
+respostas rápidas. Nenhuma dependência nova em Python: o app fala com o Ollama via `httpx`.
+
+### Como ativar
+
+1. Instale o **Ollama** e baixe um modelo pequeno (uma vez só):
+   - **Windows:** `winget install --id Ollama.Ollama -e` e depois `ollama pull llama3.2:3b`
+   - **macOS:** `brew install ollama` e depois `ollama pull llama3.2:3b`
+2. No app, vá em **Configuração → IA local (opcional)** e marque **Ativar sugestões de resposta com IA local**.
+3. Nas telas de **Pós-venda**, **Caixa de entrada** e **Mensagens**, clique no botão **✨ IA**
+   ao lado do campo de resposta para gerar um rascunho (sempre revise antes de enviar).
+
+> Endereço e modelo são configuráveis (padrão: `http://localhost:11434` e `llama3.2:3b`).
+> Modelos menores respondem mais rápido; um modelo 3B roda bem em ~4 GB de RAM, sem GPU.
+
+### Instalar junto no setup (opcional)
+
+Os instaladores podem baixar o Ollama e o modelo automaticamente, em **modo silencioso**,
+se você definir a variável de ambiente `MM_COM_IA=1` **antes** de rodar:
+
+- **Windows:** `$env:MM_COM_IA = "1"` (opcional: `$env:MM_IA_MODELO = "qwen2.5:3b"`) e execute o `instalar.ps1`.
+- **macOS/Linux:** `MM_COM_IA=1 bash iniciar.sh`.
 
 ---
 
