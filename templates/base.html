@@ -273,6 +273,39 @@
                         function (data) { if (saida) { saida.hidden = false; saida.value = data.sugestao; saida.focus(); } });
                     return;
                 }
+                var bt = e.target.closest(".btn-ia-titulo");
+                if (bt) {
+                    var formT = bt.closest("form");
+                    var campoT = formT && formT.querySelector('input[name="title"]');
+                    var campoM = formT && formT.querySelector('input[name="marca"]');
+                    var atual = (campoT && campoT.value) || "";
+                    if (!atual.trim()) { alert("Escreva um título primeiro."); return; }
+                    var corpoT = { titulo: atual };
+                    if (campoM && campoM.value) corpoT.marca = campoM.value;
+                    chamar("/ia/titulo", new URLSearchParams(corpoT).toString(), bt,
+                        function (data) { if (campoT) { campoT.value = data.texto; campoT.focus(); } });
+                    return;
+                }
+                var bv = e.target.closest(".btn-ia-variar");
+                if (bv) {
+                    var formV = bv.closest("form");
+                    var campoV = formV && formV.querySelector('textarea[name="texto"]');
+                    var atualV = (campoV && campoV.value) || "";
+                    if (!atualV.trim()) { alert("Escreva um texto primeiro."); return; }
+                    chamar("/ia/variar", new URLSearchParams({ texto: atualV }).toString(), bv,
+                        function (data) { if (campoV) { campoV.value = data.texto; campoV.focus(); } });
+                    return;
+                }
+                var ba = e.target.closest("#btn-ia-assistente");
+                if (ba) {
+                    var perg = document.getElementById("ia-pergunta");
+                    var resp = document.getElementById("ia-resposta");
+                    var texto2 = (perg && perg.value) || "";
+                    if (!texto2.trim()) { alert("Escreva sua pergunta primeiro."); return; }
+                    chamar("/ia/assistente", new URLSearchParams({ pergunta: texto2 }).toString(), ba,
+                        function (data) { if (resp) { resp.hidden = false; resp.textContent = data.resposta; } });
+                    return;
+                }
                 var bres = e.target.closest("#btn-ia-resumo");
                 if (bres) {
                     var out = document.getElementById("ia-resumo-saida");

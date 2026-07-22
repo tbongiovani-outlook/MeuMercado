@@ -30,6 +30,7 @@
         <label class="field">
             <span>Título</span>
             <input type="text" name="title" value="{{ item.title }}" maxlength="60">
+            {% if ia_on %}<button type="button" class="btn btn--ghost btn--sm btn-ia-titulo" title="Sugerir título mais vendável com IA local">✨ Melhorar título</button>{% endif %}
             <small class="hint">Anúncios vinculados ao catálogo não permitem alterar o título.</small>
         </label>
         <div class="row">

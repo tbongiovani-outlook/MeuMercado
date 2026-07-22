@@ -27,6 +27,7 @@
             <textarea name="texto" rows="3" required maxlength="2000"
                       placeholder="Ex.: Olá! O envio é feito em até 1 dia útil após a confirmação do pagamento."></textarea>
         </label>
+        {% if ia_on %}<button type="button" class="btn btn--ghost btn--sm btn-ia-variar" title="Gerar uma variação do texto com IA local">✨ Variação</button>{% endif %}
         <button class="btn btn--primary" type="submit">Salvar resposta</button>
     </form>
 </section>

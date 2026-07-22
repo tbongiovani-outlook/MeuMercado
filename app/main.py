@@ -1592,6 +1592,68 @@ def ia_resumo(request: Request):
     return JSONResponse({"ok": True, "resumo": resumo})
 
 
+def _ia_guard_login(request: Request):
+    """Como _ia_guard, mas exige só login (sem conta ML) — para geração de texto."""
+    if not _current_user_id(request):
+        return JSONResponse({"ok": False, "erro": "Sessão expirada."}, status_code=401)
+    if not ia.habilitada():
+        return JSONResponse(
+            {"ok": False, "erro": "IA local desativada nas configurações."}, status_code=400
+        )
+    return None
+
+
+@app.post("/ia/titulo")
+def ia_titulo(request: Request, titulo: str = Form(...), marca: str = Form("")):
+    """Sugere um título mais vendável (SEO) para o anúncio. Responde JSON."""
+    erro = _ia_guard_login(request)
+    if erro:
+        return erro
+    texto = ia.melhorar_titulo(titulo, marca)
+    if not texto:
+        return JSONResponse(
+            {"ok": False, "erro": "Não foi possível gerar o título. O Ollama está em execução?"}
+        )
+    return JSONResponse({"ok": True, "texto": texto})
+
+
+@app.post("/ia/variar")
+def ia_variar(request: Request, texto: str = Form(...)):
+    """Gera uma variação de uma resposta rápida. Responde JSON."""
+    erro = _ia_guard_login(request)
+    if erro:
+        return erro
+    novo = ia.variar_resposta(texto)
+    if not novo:
+        return JSONResponse(
+            {"ok": False, "erro": "Não foi possível gerar a variação. O Ollama está em execução?"}
+        )
+    return JSONResponse({"ok": True, "texto": novo})
+
+
+@app.post("/ia/assistente")
+def ia_assistente(request: Request, pergunta: str = Form(...)):
+    """Responde a uma dúvida livre sobre vender no Mercado Livre. Responde JSON."""
+    erro = _ia_guard_login(request)
+    if erro:
+        return erro
+    resposta = ia.assistente(pergunta)
+    if not resposta:
+        return JSONResponse(
+            {"ok": False, "erro": "Não foi possível responder agora. O Ollama está em execução?"}
+        )
+    return JSONResponse({"ok": True, "resposta": resposta})
+
+
+@app.get("/assistente")
+def assistente_page(request: Request):
+    """Página do assistente de vendas com IA local."""
+    if not _current_user_id(request):
+        return _redirect("/entrar")
+    ctx = _base_context(request)
+    return templates.TemplateResponse(request, "assistente.html", ctx)
+
+
 @app.post("/pos-venda/responder")
 def responder_pergunta(request: Request, question_id: int = Form(...), text: str = Form(...)):
     redirect, _ = _require_ready(request)

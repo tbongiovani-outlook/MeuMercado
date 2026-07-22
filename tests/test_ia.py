@@ -305,3 +305,106 @@ def test_resumo_com_cache_do_painel(auth_client, monkeypatch):
     body = r.json()
     assert body["ok"] is True
     assert body["resumo"] == "Tudo certo hoje."
+
+
+# --- melhorar_titulo / variar_resposta / assistente ----------------------------
+
+
+def test_melhorar_titulo_trunca_60(temp_db, monkeypatch):
+    database.set_config("ia_habilitada", "1")
+    longo = "T" * 90
+    monkeypatch.setattr(ia.httpx, "post", _resp_ok(longo))
+    novo = ia.melhorar_titulo("Camiseta")
+    assert len(novo) == 60
+
+
+def test_variar_resposta_sucesso(temp_db, monkeypatch):
+    database.set_config("ia_habilitada", "1")
+    monkeypatch.setattr(ia.httpx, "post", _resp_ok("Outra forma de dizer."))
+    assert ia.variar_resposta("O envio é rápido.") == "Outra forma de dizer."
+
+
+def test_assistente_sucesso(temp_db, monkeypatch):
+    database.set_config("ia_habilitada", "1")
+    monkeypatch.setattr(ia.httpx, "post", _resp_ok("Use palavras-chave no título."))
+    assert ia.assistente("como melhorar o título?") == "Use palavras-chave no título."
+
+
+def test_novas_funcoes_vazias_sem_entrada_ou_desligadas(temp_db):
+    database.set_config("ia_habilitada", "1")
+    assert ia.melhorar_titulo("") == ""
+    assert ia.variar_resposta("") == ""
+    assert ia.assistente("") == ""
+    database.set_config("ia_habilitada", "0")
+    assert ia.melhorar_titulo("Camiseta") == ""
+    assert ia.variar_resposta("texto") == ""
+    assert ia.assistente("duvida") == ""
+
+
+# --- Endpoints /ia/titulo, /ia/variar, /ia/assistente --------------------------
+
+
+def test_titulo_sucesso(auth_client, monkeypatch):
+    database.set_config("ia_habilitada", "1")
+    monkeypatch.setattr(ia, "melhorar_titulo", lambda *a, **k: "Título melhor")
+    r = auth_client.post("/ia/titulo", data={"titulo": "Camiseta", "marca": "Nike"})
+    assert r.status_code == 200
+    assert r.json() == {"ok": True, "texto": "Título melhor"}
+
+
+def test_titulo_401_sem_login(client):
+    r = client.post("/ia/titulo", data={"titulo": "x"}, follow_redirects=False)
+    assert r.status_code == 401
+
+
+def test_titulo_400_ia_desligada(auth_client):
+    r = auth_client.post("/ia/titulo", data={"titulo": "x"})
+    assert r.status_code == 400
+
+
+def test_variar_sucesso(auth_client, monkeypatch):
+    database.set_config("ia_habilitada", "1")
+    monkeypatch.setattr(ia, "variar_resposta", lambda *a, **k: "Nova versão")
+    r = auth_client.post("/ia/variar", data={"texto": "Olá!"})
+    assert r.status_code == 200
+    assert r.json() == {"ok": True, "texto": "Nova versão"}
+
+
+def test_variar_400_ia_desligada(auth_client):
+    r = auth_client.post("/ia/variar", data={"texto": "x"})
+    assert r.status_code == 400
+
+
+def test_assistente_endpoint_sucesso(auth_client, monkeypatch):
+    database.set_config("ia_habilitada", "1")
+    monkeypatch.setattr(ia, "assistente", lambda *a, **k: "Dica prática")
+    r = auth_client.post("/ia/assistente", data={"pergunta": "como vender mais?"})
+    assert r.status_code == 200
+    assert r.json() == {"ok": True, "resposta": "Dica prática"}
+
+
+def test_assistente_endpoint_401_sem_login(client):
+    r = client.post("/ia/assistente", data={"pergunta": "x"}, follow_redirects=False)
+    assert r.status_code == 401
+
+
+# --- Página /assistente --------------------------------------------------------
+
+
+def test_assistente_page_redireciona_sem_login(client):
+    r = client.get("/assistente", follow_redirects=False)
+    assert r.status_code in (302, 303, 307)
+    assert r.headers["location"] == "/entrar"
+
+
+def test_assistente_page_ia_desligada(auth_client):
+    r = auth_client.get("/assistente")
+    assert r.status_code == 200
+    assert "desligada" in r.text
+
+
+def test_assistente_page_ia_ligada(auth_client):
+    database.set_config("ia_habilitada", "1")
+    r = auth_client.get("/assistente")
+    assert r.status_code == 200
+    assert 'id="ia-pergunta"' in r.text

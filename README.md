@@ -428,13 +428,13 @@ desligados**: com a IA ativa usam o modelo local; sem ela (ou com o Ollama parad
 mantém o comportamento atual (heurística) ou simplesmente não exibe o botão.
 
 - [x] Gerar **descrição do anúncio** a partir do título e atributos (Publicar/Editar)
-- [ ] Sugerir **título mais vendável (SEO)** com base no checklist de Qualidade
+- [x] Sugerir **título mais vendável (SEO)** a partir do título atual
 - [ ] **Reescrever o anúncio** transformando o índice de Qualidade em melhorias concretas
 - [ ] **Classificar e priorizar perguntas** (entrega, preço, disponibilidade) por urgência
 - [x] Sugerir **resposta a reclamações** do pós-venda com tom mais cuidadoso
 - [x] **Resumo do dia** em linguagem natural (vendas, perguntas pendentes, estoque baixo)
-- [ ] **Gerar variações** de respostas rápidas a partir de um modelo
-- [ ] **Assistente de vendas**: caixa para tirar dúvidas sobre vender no Mercado Livre
+- [x] **Gerar variações** de respostas rápidas a partir de um modelo
+- [x] **Assistente de vendas**: caixa para tirar dúvidas sobre vender no Mercado Livre
 
 ---
 

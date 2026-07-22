@@ -48,6 +48,25 @@ _SYSTEM_RESUMO = (
     "em linguagem natural, destacando o que precisa de atenção. Responda apenas com o resumo."
 )
 
+_SYSTEM_TITULO = (
+    "Você é um especialista em anúncios do Mercado Livre. Reescreva o título do anúncio em "
+    "português do Brasil para ser mais atraente e fácil de encontrar na busca, incluindo "
+    "marca, modelo e principais características. Use no MÁXIMO 60 caracteres, sem CAIXA ALTA "
+    "excessiva e sem emojis. Responda apenas com o novo título, sem aspas."
+)
+
+_SYSTEM_VARIACAO = (
+    "Você é um vendedor do Mercado Livre. Reescreva a mensagem a seguir mantendo o mesmo "
+    "sentido, em português do Brasil, com um tom cordial e natural, um pouco diferente do "
+    "original. Responda apenas com o novo texto, sem aspas."
+)
+
+_SYSTEM_ASSISTENTE = (
+    "Você é um assistente que ajuda vendedores do Mercado Livre no Brasil. Responda à "
+    "pergunta de forma prática e objetiva, em português do Brasil, com dicas acionáveis. "
+    "Se não tiver certeza, seja honesto. Responda em até 2 parágrafos curtos."
+)
+
 
 def habilitada() -> bool:
     """True se o usuário ligou a integração de IA nas configurações."""
@@ -116,6 +135,37 @@ def resumo_do_dia(kpis: dict, timeout: float = 30.0) -> str:
     linhas = "\n".join(f"- {chave}: {valor}" for chave, valor in kpis.items())
     prompt = f"Indicadores de hoje:\n{linhas}\nResumo:"
     return _gerar(_SYSTEM_RESUMO, prompt, timeout=timeout)
+
+
+def melhorar_titulo(titulo: str, marca: str = "", timeout: float = 30.0) -> str:
+    """Reescreve o título do anúncio para ser mais vendável (SEO). '' em falha."""
+    titulo = (titulo or "").strip()
+    if not titulo or not habilitada():
+        return ""
+    prompt = f"Título atual: {titulo}\n"
+    if marca.strip():
+        prompt += f"Marca: {marca.strip()}\n"
+    prompt += "Novo título:"
+    novo = _gerar(_SYSTEM_TITULO, prompt, timeout=timeout, num_predict=80)
+    return novo[:60].strip()
+
+
+def variar_resposta(texto: str, timeout: float = 30.0) -> str:
+    """Reescreve uma resposta rápida gerando uma variação. '' em falha."""
+    texto = (texto or "").strip()
+    if not texto or not habilitada():
+        return ""
+    prompt = f"Mensagem original: {texto}\nNova versão:"
+    return _gerar(_SYSTEM_VARIACAO, prompt, timeout=timeout)
+
+
+def assistente(pergunta: str, timeout: float = 60.0) -> str:
+    """Responde a uma dúvida livre sobre vender no Mercado Livre. '' em falha."""
+    pergunta = (pergunta or "").strip()
+    if not pergunta or not habilitada():
+        return ""
+    prompt = f"Pergunta: {pergunta}\nResposta:"
+    return _gerar(_SYSTEM_ASSISTENTE, prompt, timeout=timeout, num_predict=300)
 
 
 def _gerar(system: str, prompt: str, timeout: float = 30.0, num_predict: int = 200) -> str:
