@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Ranking de produtos · Meu Mercado{% endblock %}
+{% block nav %}{% include "_nav.html" %}{% endblock %}
+
+{% block hero %}
+<header class="page-header">
+    <div>
+        <h1 class="page-header__title">Ranking de produtos</h1>
+        <p class="page-header__sub">Descubra seus campeões de venda e os anúncios que precisam de atenção.</p>
+    </div>
+    <a class="btn btn--ghost btn--sm" href="/ranking?por={{ por }}&atualizar=1">↻ Atualizar</a>
+</header>
+{% endblock %}
+
+{% block content %}
+{% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
+
+{% if cache_em %}<p class="muted">Dados de {{ cache_em|datetimebr }}.</p>{% endif %}
+
+{% if produtos %}
+<div class="row" style="gap:1rem; align-items:stretch; flex-wrap:wrap;">
+    <section class="card" style="flex:1; min-width:260px;">
+        <h2>🏆 Campeões de venda</h2>
+        <ol class="list">
+            {% for p in campeoes %}
+            <li><strong>{{ p.title }}</strong><br>
+                <small class="muted">{{ p.sold }} vendidos · {{ p.visits }} visitas
+                    {% if p.conversao is not none %}· {{ p.conversao }}% conversão{% endif %}</small></li>
+            {% endfor %}
+        </ol>
+    </section>
+    <section class="card" style="flex:1; min-width:260px;">
+        <h2>💤 Precisam de atenção</h2>
+        {% if encalhados %}
+        <ol class="list">
+            {% for p in encalhados %}
+            <li><strong>{{ p.title }}</strong><br>
+                <small class="muted">0 vendas · {{ p.visits }} visitas
+                    {% if p.visits and p.visits >= 20 %}— tem visita mas não converte{% endif %}</small>
+                <br><a class="btn btn--ghost btn--sm" href="/anuncios/{{ p.id }}/qualidade">Melhorar</a></li>
+            {% endfor %}
+        </ol>
+        {% else %}
+        <p class="muted">Todos os anúncios ativos já venderam pelo menos uma vez. 🎉</p>
+        {% endif %}
+    </section>
+</div>
+
+<section class="card">
+    <p class="hint">Ordenar por:
+        {% set metricas = [('vendidos','Vendidos'), ('visitas','Visitas'), ('conversao','Conversão'), ('receita','Receita'), ('estoque','Estoque')] %}
+        {% for chave, rotulo in metricas %}
+        <a class="btn btn--sm {% if por == chave %}btn--primary{% else %}btn--ghost{% endif %}" href="/ranking?por={{ chave }}">{{ rotulo }}</a>
+        {% endfor %}
+    </p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>#</th><th>Produto</th><th>Vendidos</th><th>Visitas</th>
+                <th>Conversão</th><th>Receita est.</th><th>Estoque</th><th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in produtos %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ p.title }}<br><small class="muted"><code>{{ p.id }}</code></small></td>
+                <td>{{ p.sold }}</td>
+                <td>{{ p.visits }}</td>
+                <td>{% if p.conversao is not none %}{{ p.conversao }}%{% else %}<span class="muted">—</span>{% endif %}</td>
+                <td>R$ {{ '%.2f'|format(p.receita) }}</td>
+                <td>{{ p.estoque }}</td>
+                <td>
+                    <a class="btn btn--ghost btn--sm" href="/anuncios/{{ p.id }}/editar">Editar</a>
+                    <a class="btn btn--ghost btn--sm" href="/anuncios/{{ p.id }}/qualidade">Qualidade</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="hint">Receita estimada = preço × total vendido (histórico do anúncio). Conversão =
+        vendas ÷ visitas. Baixa conversão com muitas visitas costuma indicar preço alto ou
+        anúncio pouco atrativo — veja <strong>Qualidade</strong> e <strong>Concorrência</strong>.</p>
+</section>
+{% elif not error %}
+<section class="card"><p class="muted">Nenhum anúncio ativo para ranquear.</p></section>
+{% endif %}
+{% endblock %}
