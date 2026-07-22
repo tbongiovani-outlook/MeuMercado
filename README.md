@@ -408,6 +408,8 @@ curl -X POST \
 - [x] **Proteção CSRF** (SameSite=Lax + verificação de Origin/Referer)
 - [x] Páginas de erro **404/500** com a identidade visual
 - [x] Cache das telas de **Anúncios** e **Promoções** (com invalidação automática ao alterar itens)
+- [x] **Ranking de produtos** por desempenho (vendidos, visitas, conversão, receita) com campeões e encalhados
+- [x] Modelo de IA padrão **qwen2.5:3b** (melhor português) com regras anti-alucinação na descrição
 
 ### 💡 Ideias para o futuro (backlog)
 
@@ -427,14 +429,25 @@ Recursos opcionais que aproveitam o Ollama já integrado. **Todos podem ser liga
 desligados**: com a IA ativa usam o modelo local; sem ela (ou com o Ollama parado), o app
 mantém o comportamento atual (heurística) ou simplesmente não exibe o botão.
 
-- [x] Gerar **descrição do anúncio** a partir do título e atributos (Publicar/Editar)
+- [x] Gerar **descrição do anúncio** com **especificações reais do catálogo** do ML (grounding — sem inventar specs), em Publicar/Editar
 - [x] Sugerir **título mais vendável (SEO)** a partir do título atual
-- [ ] **Reescrever o anúncio** transformando o índice de Qualidade em melhorias concretas
-- [ ] **Classificar e priorizar perguntas** (entrega, preço, disponibilidade) por urgência
+- [x] **Reescrever o anúncio** transformando o índice de Qualidade em melhorias concretas
+- [x] **Classificar e priorizar perguntas** (entrega, preço, disponibilidade) por urgência
 - [x] Sugerir **resposta a reclamações** do pós-venda com tom mais cuidadoso
 - [x] **Resumo do dia** em linguagem natural (vendas, perguntas pendentes, estoque baixo)
 - [x] **Gerar variações** de respostas rápidas a partir de um modelo
 - [x] **Assistente de vendas**: caixa para tirar dúvidas sobre vender no Mercado Livre
+
+> ✅ Backlog de IA local concluído.
+
+### 🚀 Próximas ideias (produtividade de vendas)
+
+- [ ] **Notificações proativas** no desktop (pergunta urgente, venda nova, reclamação, estoque zerado)
+- [ ] **Previsão de ruptura de estoque** ("acaba em ~X dias" pela velocidade de vendas)
+- [ ] **Reprecificador competitivo** para itens de catálogo (regra com piso de margem)
+- [ ] **Follow-up pós-venda automático** (agradecimento/pedido de avaliação após a entrega)
+- [ ] **Auto-resposta a perguntas frequentes** (quando casa com alta confiança em uma resposta rápida)
+- [ ] **Metas de vendas** no painel (progresso do mês)
 
 ---
 
