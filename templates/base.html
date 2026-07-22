@@ -229,6 +229,59 @@
             });
         })();
 
+        // IA local: descrição do anúncio, resposta a reclamações e resumo do dia.
+        (function () {
+            function chamar(url, body, botao, aoReceber) {
+                var original = botao.textContent;
+                botao.disabled = true;
+                botao.textContent = "✨ …";
+                fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: body
+                }).then(function (r) { return r.json(); }).then(function (data) {
+                    if (data.ok) {
+                        aoReceber(data);
+                    } else {
+                        alert(data.erro || "Não foi possível falar com a IA local.");
+                    }
+                }).catch(function () {
+                    alert("Não foi possível falar com a IA local.");
+                }).finally(function () {
+                    botao.disabled = false;
+                    botao.textContent = original;
+                });
+            }
+
+            document.addEventListener("click", function (e) {
+                var bd = e.target.closest(".btn-ia-descricao");
+                if (bd) {
+                    var form = bd.closest("form");
+                    var area = form && form.querySelector('textarea[name="description"]');
+                    var titulo = bd.getAttribute("data-titulo") || "";
+                    if (!titulo.trim()) return;
+                    chamar("/ia/descricao", new URLSearchParams({ titulo: titulo }).toString(), bd,
+                        function (data) { if (area) { area.value = data.texto; area.focus(); } });
+                    return;
+                }
+                var br = e.target.closest(".btn-ia-reclamacao");
+                if (br) {
+                    var li = br.closest("li");
+                    var saida = li && li.querySelector(".ia-reclamacao-saida");
+                    var texto = br.getAttribute("data-texto") || "";
+                    chamar("/ia/reclamacao", new URLSearchParams({ texto: texto }).toString(), br,
+                        function (data) { if (saida) { saida.hidden = false; saida.value = data.sugestao; saida.focus(); } });
+                    return;
+                }
+                var bres = e.target.closest("#btn-ia-resumo");
+                if (bres) {
+                    var out = document.getElementById("ia-resumo-saida");
+                    chamar("/ia/resumo", "", bres,
+                        function (data) { if (out) { out.hidden = false; out.textContent = data.resumo; } });
+                }
+            });
+        })();
+
         // Edição em massa: "selecionar todos".
         (function () {
             var all = document.getElementById("check-all");

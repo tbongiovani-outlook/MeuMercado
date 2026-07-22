@@ -520,6 +520,7 @@ def home(request: Request, atualizar: int = 0):
         "acoes": [],
         "cache_em": None,
         "error": request.session.pop("flash", None),
+        "ia_on": ia.habilitada(),
     }
 
     if context["configured"] and context["connected"]:
@@ -1525,6 +1526,70 @@ def ia_status(request: Request):
             "modelo": ia.modelo(),
         }
     )
+
+
+def _ia_guard(request: Request):
+    """Valida sessão + IA ligada para os endpoints de IA. Retorna JSONResponse ou None."""
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return JSONResponse({"ok": False, "erro": "Sessão expirada."}, status_code=401)
+    if not ia.habilitada():
+        return JSONResponse(
+            {"ok": False, "erro": "IA local desativada nas configurações."}, status_code=400
+        )
+    return None
+
+
+@app.post("/ia/descricao")
+def ia_descricao(request: Request, titulo: str = Form(...), marca: str = Form("")):
+    """Gera a descrição de um anúncio a partir do título (e marca). Responde JSON."""
+    erro = _ia_guard(request)
+    if erro:
+        return erro
+    texto = ia.gerar_descricao(titulo, marca)
+    if not texto:
+        return JSONResponse(
+            {"ok": False, "erro": "Não foi possível gerar a descrição. O Ollama está em execução?"}
+        )
+    return JSONResponse({"ok": True, "texto": texto})
+
+
+@app.post("/ia/reclamacao")
+def ia_reclamacao(request: Request, texto: str = Form(...)):
+    """Sugere uma resposta cordial a uma reclamação do pós-venda. Responde JSON."""
+    erro = _ia_guard(request)
+    if erro:
+        return erro
+    sugestao = ia.sugerir_reclamacao(texto)
+    if not sugestao:
+        return JSONResponse(
+            {"ok": False, "erro": "Não foi possível gerar a sugestão. O Ollama está em execução?"}
+        )
+    return JSONResponse({"ok": True, "sugestao": sugestao})
+
+
+@app.post("/ia/resumo")
+def ia_resumo(request: Request):
+    """Resume o dia em linguagem natural a partir dos KPIs já calculados no painel."""
+    erro = _ia_guard(request)
+    if erro:
+        return erro
+    try:
+        me, _ = _me_cached()
+        cached = _cache_ler(f"dashboard:{me['id']}")
+    except Exception:  # noqa: BLE001
+        cached = None
+    if not cached:
+        return JSONResponse(
+            {"ok": False, "erro": "Abra o painel primeiro para calcular os indicadores do dia."}
+        )
+    kpis = cached[0].get("kpis") or {}
+    resumo = ia.resumo_do_dia(kpis)
+    if not resumo:
+        return JSONResponse(
+            {"ok": False, "erro": "Não foi possível gerar o resumo. O Ollama está em execução?"}
+        )
+    return JSONResponse({"ok": True, "resumo": resumo})
 
 
 @app.post("/pos-venda/responder")
