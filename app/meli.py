@@ -744,6 +744,31 @@ def get_item_visits(item_id: str) -> dict:
     return api_get("/visits/items", {"ids": item_id})
 
 
+def get_items_visits(item_ids: list[str]) -> dict[str, int]:
+    """Total de visitas por item (mapa ``id -> visitas``), em lotes e tolerante a falhas."""
+    if not item_ids:
+        return {}
+    visitas: dict[str, int] = {}
+    for i in range(0, len(item_ids), 20):
+        lote = ",".join(item_ids[i : i + 20])
+        try:
+            data = api_get("/visits/items", {"ids": lote})
+        except Exception:  # noqa: BLE001
+            continue
+        if isinstance(data, list):
+            for row in data:
+                iid = row.get("item_id")
+                if iid:
+                    visitas[iid] = int(row.get("total_visits") or 0)
+        elif isinstance(data, dict):
+            for iid, valor in data.items():
+                try:
+                    visitas[iid] = int(valor or 0)
+                except (TypeError, ValueError):
+                    visitas[iid] = 0
+    return visitas
+
+
 def get_billing_summary(user_id: int) -> dict:
     """Resumo de faturamento/comissões (saldo da conta)."""
     return api_get(f"/users/{user_id}/mercadopago_account/balance")

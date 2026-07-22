@@ -1935,6 +1935,78 @@ def caixa_entrada_responder(request: Request, question_id: int = Form(...), text
 
 
 # ---------------------------------------------------------------------------
+# Ranking de produtos (desempenho)
+# ---------------------------------------------------------------------------
+# Métricas de ordenação suportadas e o campo correspondente em cada produto.
+_RANKING_METRICAS = {
+    "vendidos": "sold",
+    "visitas": "visits",
+    "conversao": "conversao",
+    "receita": "receita",
+    "estoque": "estoque",
+}
+
+
+def _ordenar_ranking(produtos: list[dict], por: str) -> list[dict]:
+    """Ordena os produtos pela métrica escolhida (maior primeiro). None por último."""
+    campo = _RANKING_METRICAS.get(por, "sold")
+    return sorted(
+        produtos, key=lambda p: (p.get(campo) is not None, p.get(campo) or 0), reverse=True
+    )
+
+
+@app.get("/ranking")
+def ranking(request: Request, por: str = "vendidos", atualizar: int = 0):
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return redirect
+    if por not in _RANKING_METRICAS:
+        por = "vendidos"
+    ctx = _base_context(request)
+    ctx.update({"produtos": [], "por": por, "cache_em": None, "campeoes": [], "encalhados": []})
+    force = bool(atualizar)
+    try:
+        me, _ = _me_cached(force=force)
+        chave = f"ranking:{me['id']}"
+        cached = _cache_ler(chave, force=force)
+        if cached:
+            produtos, cache_em = cached
+        else:
+            items = meli.get_items_details(meli.list_all_item_ids(me["id"]))
+            ativos = [it for it in items if it.get("status") == "active"]
+            visitas = meli.get_items_visits([it["id"] for it in ativos])
+            produtos = []
+            for it in ativos:
+                vis = visitas.get(it["id"], 0)
+                sold = it.get("sold_quantity") or 0
+                preco = float(it.get("price") or 0)
+                produtos.append(
+                    {
+                        "id": it.get("id"),
+                        "title": it.get("title"),
+                        "thumbnail": it.get("thumbnail"),
+                        "permalink": it.get("permalink"),
+                        "preco": preco,
+                        "sold": sold,
+                        "visits": vis,
+                        "conversao": round(100 * sold / vis, 1) if vis else None,
+                        "receita": round(sold * preco, 2),
+                        "estoque": it.get("available_quantity") or 0,
+                    }
+                )
+            cache_em = _cache_gravar(chave, produtos)
+        produtos = _ordenar_ranking(produtos, por)
+        # Destaques: campeões (mais vendidos) e encalhados (ativos sem venda).
+        ctx["campeoes"] = _ordenar_ranking(produtos, "vendidos")[:3]
+        ctx["encalhados"] = [p for p in produtos if (p.get("sold") or 0) == 0][:5]
+        ctx["produtos"] = produtos
+        ctx["cache_em"] = cache_em
+    except Exception as exc:  # noqa: BLE001
+        ctx["error"] = f"Não foi possível montar o ranking: {exc}"
+    return templates.TemplateResponse(request, "ranking.html", ctx)
+
+
+# ---------------------------------------------------------------------------
 # Estatísticas (visitas)
 # ---------------------------------------------------------------------------
 @app.get("/estatisticas")
