@@ -58,7 +58,7 @@
             <legend>Descrição</legend>
             <label class="field">
                 <span>Descrição do produto</span>
-                <textarea name="description" rows="5" maxlength="4000"
+                <textarea name="description" rows="5" maxlength="10000"
                           placeholder="Descreva o produto…">{{ form.description or '' }}</textarea>
                 {% if ia_on %}<button type="button" class="btn btn--ghost btn--sm btn-ia-descricao" title="Gerar descrição com IA local">✨ Gerar descrição</button>
                 <small class="hint">Rascunho gerado pela IA local — revise antes de publicar.</small>{% endif %}
