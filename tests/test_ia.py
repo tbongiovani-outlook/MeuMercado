@@ -235,6 +235,21 @@ def test_descricao_ajustada_preserva_texto_limpo():
     assert ia._descricao_ajustada(limpo) == limpo
 
 
+def test_gerar_descricao_injeta_specs_no_prompt(temp_db, monkeypatch):
+    database.set_config("ia_habilitada", "1")
+    monkeypatch.setattr(ia.httpx, "post", _resp_ok("Parágrafo de venda incrível."))
+    out = ia.gerar_descricao(
+        "iPhone 16 Pro Max",
+        marca="Apple",
+        specs="- Marca: Apple\n- Memória interna: 512 GB",
+    )
+    # Parágrafos vêm do modelo; seção de specs é montada no código (dados reais).
+    assert "Parágrafo de venda incrível." in out
+    assert "Especificações técnicas:" in out
+    assert "- Memória interna: 512 GB" in out
+    assert "#" in out  # hashtags montadas no código
+
+
 def test_sugerir_reclamacao_sucesso(temp_db, monkeypatch):
     database.set_config("ia_habilitada", "1")
     monkeypatch.setattr(ia.httpx, "post", _resp_ok("Lamento o ocorrido."))
