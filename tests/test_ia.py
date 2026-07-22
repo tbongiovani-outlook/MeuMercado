@@ -155,3 +155,49 @@ def test_configuracao_desliga_ia_por_padrao(auth_client):
     )
     assert r.status_code == 200
     assert database.get_config("ia_habilitada") == "0"
+
+
+# --- Página de Ajuda -----------------------------------------------------------
+
+
+def test_ajuda_redireciona_sem_login(client):
+    r = client.get("/ajuda", follow_redirects=False)
+    assert r.status_code in (302, 303, 307)
+    assert r.headers["location"] == "/entrar"
+
+
+def test_ajuda_abre_logado(auth_client):
+    r = auth_client.get("/ajuda")
+    assert r.status_code == 200
+    assert "Ollama" in r.text
+    assert "IA local" in r.text
+
+
+# --- Endpoint /ia/status -------------------------------------------------------
+
+
+def test_ia_status_401_sem_login(client):
+    r = client.get("/ia/status", follow_redirects=False)
+    assert r.status_code == 401
+    assert r.json()["ok"] is False
+
+
+def test_ia_status_desligada(auth_client):
+    r = auth_client.get("/ia/status")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["ok"] is True
+    assert body["habilitada"] is False
+    assert body["disponivel"] is False
+
+
+def test_ia_status_ligada_e_disponivel(auth_client, monkeypatch):
+    database.set_config("ia_habilitada", "1")
+    monkeypatch.setattr(ia, "disponivel", lambda *a, **k: True)
+    r = auth_client.get("/ia/status")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["habilitada"] is True
+    assert body["disponivel"] is True
+    assert body["endpoint"] == ia.DEFAULT_ENDPOINT
+    assert body["modelo"] == ia.DEFAULT_MODELO
