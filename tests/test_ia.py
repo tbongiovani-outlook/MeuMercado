@@ -315,6 +315,28 @@ def test_reclamacao_400_ia_desligada(auth_client):
     assert r.status_code == 400
 
 
+def test_reescrever_401_sem_login(client):
+    r = client.post("/ia/reescrever-anuncio", data={"item_id": "MLB1"}, follow_redirects=False)
+    assert r.status_code == 401
+
+
+def test_reescrever_sucesso(auth_client, monkeypatch):
+    database.set_config("ia_habilitada", "1")
+    monkeypatch.setattr(ia, "melhorar_titulo", lambda *a, **k: "Título melhor")
+    monkeypatch.setattr(ia, "gerar_descricao", lambda *a, **k: "Descrição melhor")
+    r = auth_client.post("/ia/reescrever-anuncio", data={"item_id": "MLB1"})
+    assert r.status_code == 200
+    assert r.json() == {"ok": True, "titulo": "Título melhor", "descricao": "Descrição melhor"}
+
+
+def test_reescrever_sem_resultado(auth_client, monkeypatch):
+    database.set_config("ia_habilitada", "1")
+    monkeypatch.setattr(ia, "melhorar_titulo", lambda *a, **k: "")
+    monkeypatch.setattr(ia, "gerar_descricao", lambda *a, **k: "")
+    r = auth_client.post("/ia/reescrever-anuncio", data={"item_id": "MLB1"})
+    assert r.json()["ok"] is False
+
+
 def test_resumo_401_sem_login(client):
     r = client.post("/ia/resumo", follow_redirects=False)
     assert r.status_code == 401
