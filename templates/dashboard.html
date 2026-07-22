@@ -51,6 +51,17 @@
 </section>
 {% endif %}
 
+{% if ia_on %}
+<section class="card" aria-labelledby="resumo-ia-titulo">
+    <h2 id="resumo-ia-titulo">Resumo do dia <span class="badge">IA local</span></h2>
+    <p class="muted">Gere um resumo em linguagem natural dos indicadores abaixo, usando o Ollama local.</p>
+    <p>
+        <button type="button" class="btn btn--ghost btn--sm" id="btn-ia-resumo">✨ Gerar resumo do dia</button>
+    </p>
+    <p id="ia-resumo-saida" class="ia-resumo-saida" hidden></p>
+</section>
+{% endif %}
+
 <h2 class="section-title">Resumo (últimos 30 dias)</h2>
 {% if cache_em %}
 <p class="cache-info">

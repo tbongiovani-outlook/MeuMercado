@@ -26,6 +26,28 @@ _SYSTEM = (
     "mensagem, sem aspas."
 )
 
+_SYSTEM_DESCRICAO = (
+    "Você é um vendedor do Mercado Livre escrevendo a descrição de um anúncio em "
+    "português do Brasil. Escreva uma descrição clara e persuasiva em 2 a 4 parágrafos "
+    "curtos, destacando benefícios e características do produto. NÃO invente dados que não "
+    "foram informados (marca, medidas, garantia, conteúdo). Responda apenas com o texto "
+    "da descrição, sem títulos nem aspas."
+)
+
+_SYSTEM_RECLAMACAO = (
+    "Você é um vendedor do Mercado Livre respondendo a uma reclamação de um cliente em "
+    "português do Brasil. Seja empático, profissional e objetivo: reconheça o problema, "
+    "ofereça um encaminhamento (troca, reembolso ou orientação) e mantenha um tom cordial. "
+    "Não admita culpa jurídica nem prometa o que não pode cumprir. Responda apenas com o "
+    "texto da mensagem, sem aspas."
+)
+
+_SYSTEM_RESUMO = (
+    "Você é um assistente que resume o dia de um vendedor do Mercado Livre em português "
+    "do Brasil. A partir dos indicadores fornecidos, escreva um resumo curto (2 a 4 frases) "
+    "em linguagem natural, destacando o que precisa de atenção. Responda apenas com o resumo."
+)
+
 
 def habilitada() -> bool:
     """True se o usuário ligou a integração de IA nas configurações."""
@@ -63,21 +85,57 @@ def sugerir_resposta(pergunta: str, contexto: str = "", timeout: float = 30.0) -
     if contexto:
         prompt += f"Contexto do anúncio: {contexto}\n"
     prompt += "Resposta sugerida:"
+    return _gerar(_SYSTEM, prompt, timeout=timeout)
 
+
+def gerar_descricao(titulo: str, marca: str = "", timeout: float = 60.0) -> str:
+    """Gera a descrição de um anúncio a partir do título (e marca). '' em falha."""
+    titulo = (titulo or "").strip()
+    if not titulo or not habilitada():
+        return ""
+    prompt = f"Título do anúncio: {titulo}\n"
+    if marca.strip():
+        prompt += f"Marca: {marca.strip()}\n"
+    prompt += "Descrição sugerida:"
+    return _gerar(_SYSTEM_DESCRICAO, prompt, timeout=timeout, num_predict=400)
+
+
+def sugerir_reclamacao(texto: str, timeout: float = 30.0) -> str:
+    """Gera uma resposta cordial a uma reclamação do pós-venda. '' em falha."""
+    texto = (texto or "").strip()
+    if not texto or not habilitada():
+        return ""
+    prompt = f"Reclamação do cliente: {texto}\nResposta sugerida:"
+    return _gerar(_SYSTEM_RECLAMACAO, prompt, timeout=timeout)
+
+
+def resumo_do_dia(kpis: dict, timeout: float = 30.0) -> str:
+    """Gera um resumo em linguagem natural a partir dos indicadores do painel."""
+    if not kpis or not habilitada():
+        return ""
+    linhas = "\n".join(f"- {chave}: {valor}" for chave, valor in kpis.items())
+    prompt = f"Indicadores de hoje:\n{linhas}\nResumo:"
+    return _gerar(_SYSTEM_RESUMO, prompt, timeout=timeout)
+
+
+def _gerar(system: str, prompt: str, timeout: float = 30.0, num_predict: int = 200) -> str:
+    """Chama o modelo local (Ollama ``/api/generate``). Retorna '' em qualquer falha."""
+    if not habilitada():
+        return ""
     try:
         resp = httpx.post(
             f"{endpoint()}/api/generate",
             json={
                 "model": modelo(),
-                "system": _SYSTEM,
+                "system": system,
                 "prompt": prompt,
                 "stream": False,
-                "options": {"temperature": 0.3, "num_predict": 200},
+                "options": {"temperature": 0.3, "num_predict": num_predict},
             },
             timeout=timeout,
         )
         resp.raise_for_status()
         return (resp.json().get("response") or "").strip()
     except Exception as exc:  # noqa: BLE001
-        logger.warning("Sugestão de IA indisponível: %s", exc)
+        logger.warning("IA local indisponível: %s", exc)
         return ""
