@@ -75,6 +75,7 @@ def mock_meli(monkeypatch):
         "update_item": lambda iid, payload: {},
         "update_item_status": lambda iid, status: {},
         "update_item_description": lambda iid, text: {},
+        "create_item_description": lambda iid, text: {},
         "duplicate_item": lambda iid: {"id": "MLBDUP"},
         "apply_item_promotion": lambda *a, **k: {},
         "remove_item_promotion": lambda *a, **k: {},
