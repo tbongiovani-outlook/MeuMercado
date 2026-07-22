@@ -3,6 +3,10 @@
 Registro das mudanças implementadas (gerado automaticamente a cada merge na `main`).
 
 <!-- novas-entradas -->
+## 2026-07-22
+
+- feat: modo escuro, atalhos de teclado, PWA/notificacoes e retentativa 429 (#17) (cd76ba1)
+
 ## 2026-07-21
 
 - feat: link para abrir o anuncio no sistema nas telas que o referenciam (#15) (ebfc717)
