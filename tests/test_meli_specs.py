@@ -47,3 +47,31 @@ def test_get_product_specs_erro_retorna_vazio(monkeypatch):
 
 def test_get_product_specs_titulo_vazio():
     assert meli.get_product_specs("") == ""
+
+
+def test_get_product_specs_by_id_retorna_atributos(monkeypatch):
+    monkeypatch.setattr(
+        meli,
+        "get_catalog_product",
+        lambda pid: {
+            "attributes": [
+                {"id": "BRAND", "name": "Marca", "value_name": "Apple"},
+                {"id": "PROCESSOR", "name": "Processador", "value_name": "Apple A18 Pro"},
+                {"id": "GTIN", "name": "GTIN", "value_name": "123"},
+            ]
+        },
+    )
+    specs = meli.get_product_specs_by_id("MLB123")
+    assert "- Marca: Apple" in specs
+    assert "- Processador: Apple A18 Pro" in specs
+    assert "GTIN" not in specs  # ignorado
+
+
+def test_get_product_specs_by_id_vazio_ou_erro(monkeypatch):
+    assert meli.get_product_specs_by_id("") == ""
+
+    def boom(pid):
+        raise RuntimeError("404")
+
+    monkeypatch.setattr(meli, "get_catalog_product", boom)
+    assert meli.get_product_specs_by_id("MLB123") == ""
