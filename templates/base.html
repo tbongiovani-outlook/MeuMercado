@@ -253,6 +253,36 @@
                 });
             }
 
+            // Renderiza um markdown simples (negrito, listas e paragrafos) com HTML escapado.
+            function escapeHTML(s) {
+                return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            }
+            function inlineMd(s) {
+                return s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+                        .replace(/(^|[^*])\*([^*]+)\*(?!\*)/g, "$1<strong>$2</strong>");
+            }
+            function formatarIA(texto) {
+                var linhas = escapeHTML((texto || "").trim()).split(/\r?\n/);
+                var html = "", emLista = false, paragrafo = [];
+                function fechaP() { if (paragrafo.length) { html += "<p>" + inlineMd(paragrafo.join(" ")) + "</p>"; paragrafo = []; } }
+                function fechaL() { if (emLista) { html += "</ul>"; emLista = false; } }
+                linhas.forEach(function (linha) {
+                    var t = linha.trim();
+                    var item = t.match(/^([-*\u2022]|\d+[.)])\s+(.*)$/);
+                    if (item) {
+                        fechaP();
+                        if (!emLista) { html += "<ul>"; emLista = true; }
+                        html += "<li>" + inlineMd(item[2]) + "</li>";
+                    } else if (t === "") {
+                        fechaP(); fechaL();
+                    } else {
+                        fechaL(); paragrafo.push(t);
+                    }
+                });
+                fechaP(); fechaL();
+                return html || "<p></p>";
+            }
+
             document.addEventListener("click", function (e) {
                 var bd = e.target.closest(".btn-ia-descricao");
                 if (bd) {
@@ -303,14 +333,14 @@
                     var texto2 = (perg && perg.value) || "";
                     if (!texto2.trim()) { alert("Escreva sua pergunta primeiro."); return; }
                     chamar("/ia/assistente", new URLSearchParams({ pergunta: texto2 }).toString(), ba,
-                        function (data) { if (resp) { resp.hidden = false; resp.textContent = data.resposta; } });
+                        function (data) { if (resp) { resp.hidden = false; resp.innerHTML = formatarIA(data.resposta); } });
                     return;
                 }
                 var bres = e.target.closest("#btn-ia-resumo");
                 if (bres) {
                     var out = document.getElementById("ia-resumo-saida");
                     chamar("/ia/resumo", "", bres,
-                        function (data) { if (out) { out.hidden = false; out.textContent = data.resumo; } });
+                        function (data) { if (out) { out.hidden = false; out.innerHTML = formatarIA(data.resumo); } });
                 }
             });
         })();

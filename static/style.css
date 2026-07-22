@@ -1111,5 +1111,10 @@ code {
     border-radius: 10px;
     white-space: pre-wrap;
 }
+.ia-resumo-saida p { margin: 0 0 0.55rem; white-space: normal; }
+.ia-resumo-saida p:last-child { margin-bottom: 0; }
+.ia-resumo-saida ul { margin: 0.25rem 0 0.55rem; padding-left: 1.25rem; }
+.ia-resumo-saida ul:last-child { margin-bottom: 0; }
+.ia-resumo-saida li { margin: 0.25rem 0; white-space: normal; }
 .ia-reclamacao-saida { width: 100%; margin-top: 0.5rem; }
 
