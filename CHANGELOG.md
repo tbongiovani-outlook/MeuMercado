@@ -5,6 +5,10 @@ Registro das mudanças implementadas (gerado automaticamente a cada merge na `ma
 <!-- novas-entradas -->
 ## 2026-07-22
 
+- feat(ia): grounding por catalog_product_id na tela de editar (524cc0f)
+
+## 2026-07-22
+
 - feat(ia): grounding da descricao com specs reais do catalogo ML (73baeaa)
 
 ## 2026-07-22
