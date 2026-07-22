@@ -196,6 +196,39 @@
             });
         })();
 
+        // Sugestão de resposta com IA local (Ollama), sob demanda.
+        (function () {
+            document.addEventListener("click", function (e) {
+                var btn = e.target.closest(".btn-ia");
+                if (!btn) return;
+                var form = btn.closest("form");
+                if (!form) return;
+                var campo = form.querySelector('input[name="text"], textarea[name="text"]');
+                var pergunta = btn.getAttribute("data-pergunta") || (campo && campo.value) || "";
+                if (!pergunta.trim()) return;
+                var original = btn.textContent;
+                btn.disabled = true;
+                btn.textContent = "✨ …";
+                fetch("/ia/sugerir", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: new URLSearchParams({ pergunta: pergunta }).toString()
+                }).then(function (r) { return r.json(); }).then(function (data) {
+                    if (data.ok && campo) {
+                        campo.value = data.sugestao;
+                        campo.focus();
+                    } else if (data.erro) {
+                        alert(data.erro);
+                    }
+                }).catch(function () {
+                    alert("Não foi possível falar com a IA local.");
+                }).finally(function () {
+                    btn.disabled = false;
+                    btn.textContent = original;
+                });
+            });
+        })();
+
         // Edição em massa: "selecionar todos".
         (function () {
             var all = document.getElementById("check-all");

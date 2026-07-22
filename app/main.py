@@ -20,13 +20,19 @@ from datetime import UTC, datetime, timedelta
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
-from fastapi.responses import FileResponse, PlainTextResponse, RedirectResponse, Response
+from fastapi.responses import (
+    FileResponse,
+    JSONResponse,
+    PlainTextResponse,
+    RedirectResponse,
+    Response,
+)
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
 
-from . import auth, database, meli, quality, telemetry
+from . import auth, database, ia, meli, quality, telemetry
 from .config import settings
 
 # Configura logging em arquivo assim que o módulo é importado.
@@ -651,6 +657,9 @@ def configuracao_form(request: Request):
         "redirect_uri": meli.get_redirect_uri(),
         "estoque_baixo": _limite_estoque_baixo(),
         "cache_ttl_min": int(database.get_config("cache_ttl_min") or 15),
+        "ia_habilitada": ia.habilitada(),
+        "ia_endpoint": database.get_config("ia_endpoint") or ia.DEFAULT_ENDPOINT,
+        "ia_modelo": database.get_config("ia_modelo") or ia.DEFAULT_MODELO,
         "connected": conectado,
         "ml_user": conta,
         "badges": _nav_badges(),
@@ -677,6 +686,9 @@ def configuracao_save(
     redirect_uri: str = Form(""),
     estoque_baixo: int = Form(3),
     cache_ttl_min: int = Form(15),
+    ia_habilitada: bool = Form(False),
+    ia_endpoint: str = Form(""),
+    ia_modelo: str = Form(""),
 ):
     if not _current_user_id(request):
         return _redirect("/entrar")
@@ -685,6 +697,9 @@ def configuracao_save(
     database.set_config("meli_redirect_uri", redirect_uri.strip())
     database.set_config("estoque_baixo", str(max(0, estoque_baixo)))
     database.set_config("cache_ttl_min", str(max(0, cache_ttl_min)))
+    database.set_config("ia_habilitada", "1" if ia_habilitada else "0")
+    database.set_config("ia_endpoint", ia_endpoint.strip() or ia.DEFAULT_ENDPOINT)
+    database.set_config("ia_modelo", ia_modelo.strip() or ia.DEFAULT_MODELO)
     # Só sobrescreve o secret se o usuário digitou um novo (mantém o atual se vazio).
     if client_secret.strip():
         database.set_config("meli_client_secret", client_secret.strip())
@@ -697,6 +712,9 @@ def configuracao_save(
         "redirect_uri": meli.get_redirect_uri(),
         "estoque_baixo": _limite_estoque_baixo(),
         "cache_ttl_min": int(database.get_config("cache_ttl_min") or 15),
+        "ia_habilitada": ia.habilitada(),
+        "ia_endpoint": database.get_config("ia_endpoint") or ia.DEFAULT_ENDPOINT,
+        "ia_modelo": database.get_config("ia_modelo") or ia.DEFAULT_MODELO,
         "connected": _conta_conectada()[0],
         "ml_user": _conta_conectada()[1],
         "badges": _nav_badges(),
@@ -790,6 +808,7 @@ def _base_context(request: Request) -> dict:
         "error": None,
         "flash": request.session.pop("flash", None),
         "badges": _nav_badges(),
+        "ia_on": ia.habilitada(),
     }
 
 
@@ -1461,6 +1480,34 @@ def _sugerir_resposta(pergunta: str, respostas: list[dict]) -> str:
         if n > score:
             score, melhor = n, r["texto"]
     return melhor if score >= 1 else ""
+
+
+@app.post("/ia/sugerir")
+def ia_sugerir(request: Request, pergunta: str = Form(...)):
+    """Gera uma sugestão de resposta com a IA local (Ollama). Responde JSON.
+
+    Sob demanda (chamado por JS na tela), para não travar o carregamento das
+    páginas com uma chamada ao modelo por pergunta. Degrada com segurança:
+    se a IA falhar, cai na heurística de respostas rápidas.
+    """
+    redirect, _ = _require_ready(request)
+    if redirect:
+        return JSONResponse({"ok": False, "erro": "Sessão expirada."}, status_code=401)
+    if not ia.habilitada():
+        return JSONResponse(
+            {"ok": False, "erro": "IA local desativada nas configurações."}, status_code=400
+        )
+    sugestao = ia.sugerir_resposta(pergunta)
+    if not sugestao:
+        sugestao = _sugerir_resposta(pergunta, database.list_quick_replies())
+    if not sugestao:
+        return JSONResponse(
+            {
+                "ok": False,
+                "erro": "Não foi possível gerar uma sugestão. O Ollama está em execução?",
+            }
+        )
+    return JSONResponse({"ok": True, "sugestao": sugestao})
 
 
 @app.post("/pos-venda/responder")

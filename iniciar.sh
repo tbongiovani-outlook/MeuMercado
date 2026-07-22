@@ -50,6 +50,26 @@ p.write_text(text)
 PYEOF
 fi
 
+# 5.5) IA local opcional (Ollama) - so quando MM_COM_IA=1
+if [ "$MM_COM_IA" = "1" ]; then
+    MODELO="${MM_IA_MODELO:-llama3.2:3b}"
+    if ! command -v ollama >/dev/null 2>&1; then
+        echo "Instalando a IA local (Ollama) - opcional..."
+        if command -v brew >/dev/null 2>&1; then
+            brew install ollama || echo "Falha ao instalar o Ollama via Homebrew."
+        else
+            curl -fsSL https://ollama.com/install.sh | sh || echo "Falha ao instalar o Ollama."
+        fi
+    fi
+    if command -v ollama >/dev/null 2>&1; then
+        (ollama serve >/dev/null 2>&1 &) || true
+        sleep 2
+        echo "Baixando o modelo $MODELO (uma vez)..."
+        ollama pull "$MODELO" || echo "Falha ao baixar o modelo $MODELO."
+        echo "IA local pronta. Ative em Configuracao > IA local."
+    fi
+fi
+
 # 6) Abre o navegador (apos um instante) e inicia o aplicativo
 (
     sleep 2
