@@ -398,6 +398,64 @@ def get_catalog_product(product_id: str) -> dict:
     return api_get(f"/products/{product_id}")
 
 
+# Atributos de catálogo que não interessam na descrição (internos/redundantes).
+_SPEC_IGNORAR = {
+    "ITEM_CONDITION",
+    "GTIN",
+    "EMPTY_GTIN_REASON",
+    "DETAILED_MODEL",
+    "SELLER_SKU",
+}
+
+
+def _spec_tokens(texto: str) -> set[str]:
+    """Palavras significativas (>=3 letras/dígitos) em minúsculo."""
+    limpo = "".join(c if c.isalnum() else " " for c in (texto or "").lower())
+    return {p for p in limpo.split() if len(p) >= 3}
+
+
+def get_product_specs(titulo: str, limite: int = 12) -> str:
+    """Specs REAIS do catálogo do ML a partir do título. '' se não achar/erro.
+
+    Busca o produto no catálogo, confirma que casa com o título (sobreposição de
+    palavras) e devolve uma lista ``- Nome: valor`` de atributos reais, para servir
+    de base (grounding) à geração da descrição — evitando specs inventados.
+    """
+    titulo = (titulo or "").strip()
+    if not titulo:
+        return ""
+    try:
+        resultados = search_catalog_products(titulo, limit=5)
+        alvo_tokens = _spec_tokens(titulo)
+        if not alvo_tokens:
+            return ""
+        melhor, melhor_score = None, 0.0
+        for r in resultados:
+            nome_tokens = _spec_tokens(r.get("name") or "")
+            if not nome_tokens:
+                continue
+            score = len(alvo_tokens & nome_tokens) / len(alvo_tokens)
+            if score > melhor_score:
+                melhor, melhor_score = r, score
+        # Exige que a maioria das palavras do título apareça no produto do catálogo.
+        if not melhor or melhor_score < 0.5:
+            return ""
+        produto = get_catalog_product(melhor.get("id", ""))
+        linhas = []
+        for attr in produto.get("attributes", []):
+            nome = (attr.get("name") or "").strip()
+            valor = (attr.get("value_name") or "").strip()
+            if not nome or not valor or (attr.get("id") or "") in _SPEC_IGNORAR:
+                continue
+            linhas.append(f"- {nome}: {valor}")
+            if len(linhas) >= limite:
+                break
+        return "\n".join(linhas)
+    except Exception as exc:  # noqa: BLE001
+        _logger.warning("Falha ao buscar specs do catálogo: %s", exc)
+        return ""
+
+
 def get_price_suggestion(item_id: str) -> dict:
     """Sugestão de preço competitivo do ML (vazio se não houver)."""
     try:
