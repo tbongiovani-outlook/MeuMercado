@@ -50,9 +50,10 @@ _SYSTEM_RESUMO = (
 
 _SYSTEM_TITULO = (
     "Você é um especialista em anúncios do Mercado Livre. Reescreva o título do anúncio em "
-    "português do Brasil para ser mais atraente e fácil de encontrar na busca, incluindo "
-    "marca, modelo e principais características. Use no MÁXIMO 60 caracteres, sem CAIXA ALTA "
-    "excessiva e sem emojis. Responda apenas com o novo título, sem aspas."
+    "português do Brasil para ser mais atraente e fácil de encontrar na busca, com marca, "
+    "modelo e as principais características. O título deve ser CURTO e direto, com no máximo "
+    "60 caracteres (cerca de 8 a 10 palavras) — não ultrapasse esse limite. Sem CAIXA ALTA "
+    "excessiva, sem emojis e sem frases promocionais longas. Responda apenas com o título."
 )
 
 _SYSTEM_VARIACAO = (
@@ -139,6 +140,47 @@ def resumo_do_dia(kpis: dict, timeout: float = 30.0) -> str:
     return _gerar(_SYSTEM_RESUMO, prompt, timeout=timeout)
 
 
+# Conectores/pontuação que não devem sobrar soltos no fim de um título truncado.
+_TITULO_CONECTORES = {
+    "de",
+    "da",
+    "do",
+    "das",
+    "dos",
+    "com",
+    "e",
+    "para",
+    "por",
+    "em",
+    "a",
+    "o",
+    "no",
+    "na",
+    "nos",
+    "nas",
+    "ao",
+    "à",
+    "-",
+    "–",
+    "+",
+    "/",
+}
+
+
+def _titulo_ajustado(texto: str) -> str:
+    """Limita a 60 caracteres sem cortar palavra e remove conectores soltos no fim."""
+    t = (texto or "").strip().strip('"').strip()
+    if len(t) > 60:
+        corte = t[:60]
+        if " " in corte:
+            corte = corte.rsplit(" ", 1)[0]
+        t = corte
+    partes = t.rstrip(" ,;:.-–").split(" ")
+    while partes and partes[-1].lower() in _TITULO_CONECTORES:
+        partes.pop()
+    return " ".join(partes).rstrip(" ,;:.-–").strip()
+
+
 def melhorar_titulo(titulo: str, marca: str = "", timeout: float = 30.0) -> str:
     """Reescreve o título do anúncio para ser mais vendável (SEO). '' em falha."""
     titulo = (titulo or "").strip()
@@ -149,14 +191,7 @@ def melhorar_titulo(titulo: str, marca: str = "", timeout: float = 30.0) -> str:
         prompt += f"Marca: {marca.strip()}\n"
     prompt += "Novo título:"
     novo = _gerar(_SYSTEM_TITULO, prompt, timeout=timeout, num_predict=80)
-    novo = novo.strip().strip('"').strip()
-    if len(novo) <= 60:
-        return novo
-    # Trunca em 60 sem cortar no meio da palavra.
-    corte = novo[:60]
-    if " " in corte:
-        corte = corte.rsplit(" ", 1)[0]
-    return corte.strip()
+    return _titulo_ajustado(novo)
 
 
 def variar_resposta(texto: str, timeout: float = 30.0) -> str:
