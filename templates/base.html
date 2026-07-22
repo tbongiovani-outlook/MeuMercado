@@ -347,6 +347,20 @@
                     var out = document.getElementById("ia-resumo-saida");
                     chamar("/ia/resumo", "", bres,
                         function (data) { if (out) { out.hidden = false; out.innerHTML = formatarIA(data.resumo); } });
+                    return;
+                }
+                var brw = e.target.closest("#btn-ia-reescrever");
+                if (brw) {
+                    var itemId = brw.getAttribute("data-item") || "";
+                    var saida = document.getElementById("ia-reescrever-saida");
+                    var campoTit = document.getElementById("ia-titulo-sugerido");
+                    var campoDesc = document.getElementById("ia-descricao-sugerida");
+                    chamar("/ia/reescrever-anuncio", new URLSearchParams({ item_id: itemId }).toString(), brw,
+                        function (data) {
+                            if (saida) saida.hidden = false;
+                            if (campoTit) campoTit.value = data.titulo || "";
+                            if (campoDesc) campoDesc.value = data.descricao || "";
+                        });
                 }
             });
         })();
