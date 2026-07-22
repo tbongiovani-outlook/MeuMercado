@@ -5,6 +5,11 @@ Registro das mudanças implementadas (gerado automaticamente a cada merge na `ma
 <!-- novas-entradas -->
 ## 2026-07-22
 
+- docs: marca descricao, resumo do dia e resposta a reclamacao como entregues (7186504)
+- feat: 3 novas features com IA local (descricao, resumo do dia, resposta a reclamacao) (6f8fbcb)
+
+## 2026-07-22
+
 - docs: adiciona backlog de features com IA local (Ollama) e central de ajuda no README (f564643)
 - feat: pagina de Ajuda com guia de configuracao e ajuste do Ollama (569a03a)
 
