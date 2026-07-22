@@ -5,6 +5,11 @@ Registro das mudanças implementadas (gerado automaticamente a cada merge na `ma
 <!-- novas-entradas -->
 ## 2026-07-22
 
+- docs: marca titulo SEO, variacao de resposta e assistente como entregues (d379b5a)
+- feat: mais 3 features com IA local (titulo SEO, variacao de resposta, assistente de vendas) (cb7a6b9)
+
+## 2026-07-22
+
 - docs: marca descricao, resumo do dia e resposta a reclamacao como entregues (7186504)
 - feat: 3 novas features com IA local (descricao, resumo do dia, resposta a reclamacao) (6f8fbcb)
 
