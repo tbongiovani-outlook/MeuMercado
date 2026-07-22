@@ -5,6 +5,11 @@ Registro das mudanças implementadas (gerado automaticamente a cada merge na `ma
 <!-- novas-entradas -->
 ## 2026-07-22
 
+- docs: documenta sugestao de resposta com IA local (Ollama) no README (11f378e)
+- feat: sugestao de resposta com IA local (Ollama) + toggle em Configuracao (0b8090f)
+
+## 2026-07-22
+
 - feat: modo escuro, atalhos de teclado, PWA/notificacoes e retentativa 429 (#17) (cd76ba1)
 
 ## 2026-07-21
