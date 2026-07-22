@@ -288,9 +288,13 @@
                 if (bd) {
                     var form = bd.closest("form");
                     var area = form && form.querySelector('textarea[name="description"]');
-                    var titulo = bd.getAttribute("data-titulo") || "";
-                    if (!titulo.trim()) return;
-                    chamar("/ia/descricao", new URLSearchParams({ titulo: titulo }).toString(), bd,
+                    var campoTitulo = form && form.querySelector('input[name="title"]');
+                    var titulo = bd.getAttribute("data-titulo") || (campoTitulo && campoTitulo.value) || "";
+                    if (!titulo.trim()) { alert("Escreva um título primeiro."); return; }
+                    var corpoD = { titulo: titulo };
+                    var campoMarca = form && form.querySelector('input[name="marca"]');
+                    if (campoMarca && campoMarca.value) corpoD.marca = campoMarca.value;
+                    chamar("/ia/descricao", new URLSearchParams(corpoD).toString(), bd,
                         function (data) { if (area) { area.value = data.texto; area.focus(); } });
                     return;
                 }

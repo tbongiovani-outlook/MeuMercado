@@ -838,6 +838,7 @@ def publicar(
     marca: str = Form(""),
     gtin: str = Form(""),
     category_id: str = Form(""),
+    description: str = Form(""),
     image_file: UploadFile | None = File(None),
 ):
     redirect, _ = _require_ready(request)
@@ -855,6 +856,7 @@ def publicar(
         "marca": marca,
         "gtin": gtin,
         "category_id": category_id,
+        "description": description,
     }
     resultado = {
         "ok": False,
@@ -898,6 +900,14 @@ def publicar(
         resultado["ok"] = True
         resultado["item"] = res["item"]
         resultado["catalog_product"] = res["catalog_product"]
+        item_id = res["item"].get("id")
+        if description.strip() and item_id:
+            try:
+                meli.create_item_description(item_id, description.strip())
+            except Exception:  # noqa: BLE001 — anúncio já foi criado; descrição é secundária
+                logger.warning(
+                    "Anúncio publicado, mas não foi possível salvar a descrição.", exc_info=True
+                )
         _invalidar_cache_itens()
         logger.info(
             "Anúncio publicado: %s (%s)",

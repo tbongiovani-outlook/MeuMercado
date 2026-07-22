@@ -55,6 +55,17 @@
         </fieldset>
 
         <fieldset class="fieldset">
+            <legend>Descrição</legend>
+            <label class="field">
+                <span>Descrição do produto</span>
+                <textarea name="description" rows="5" maxlength="4000"
+                          placeholder="Descreva o produto…">{{ form.description or '' }}</textarea>
+                {% if ia_on %}<button type="button" class="btn btn--ghost btn--sm btn-ia-descricao" title="Gerar descrição com IA local">✨ Gerar descrição</button>
+                <small class="hint">Rascunho gerado pela IA local — revise antes de publicar.</small>{% endif %}
+            </label>
+        </fieldset>
+
+        <fieldset class="fieldset">
             <legend>Preço e estoque</legend>
             <div class="row">
                 <label class="field">
