@@ -5,6 +5,10 @@ Registro das mudanças implementadas (gerado automaticamente a cada merge na `ma
 <!-- novas-entradas -->
 ## 2026-07-22
 
+- feat: prioriza perguntas por urgencia (pos-venda e caixa de entrada) (9b972f7)
+
+## 2026-07-22
+
 - feat(ia): reescrever anuncio a partir da tela de Qualidade (a53c467)
 
 ## 2026-07-22
