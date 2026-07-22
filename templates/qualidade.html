@@ -49,6 +49,29 @@
     </div>
 </section>
 
+{% if ia_on %}
+<section class="card">
+    <h2>Melhorar com IA local ✨</h2>
+    <p class="muted">A IA sugere um título mais vendável e uma descrição completa (com as
+        especificações reais do catálogo), atacando os pontos fracos acima. Revise antes de aplicar.</p>
+    <button type="button" class="btn btn--primary btn--sm" id="btn-ia-reescrever"
+            data-item="{{ item.id }}">✨ Sugerir título e descrição</button>
+    <div id="ia-reescrever-saida" hidden>
+        <label class="field">
+            <span>Título sugerido</span>
+            <input type="text" id="ia-titulo-sugerido" readonly>
+        </label>
+        <label class="field">
+            <span>Descrição sugerida</span>
+            <textarea id="ia-descricao-sugerida" rows="8" readonly></textarea>
+        </label>
+        <p class="muted">Copie o que gostar e aplique em
+            <a href="/anuncios/{{ item.id }}/editar">Editar anúncio</a>.
+            Anúncios de catálogo não permitem alterar o título.</p>
+    </div>
+</section>
+{% endif %}
+
 <section class="card">
     <h2>Como vender mais e ranquear melhor</h2>
     <ul class="list">

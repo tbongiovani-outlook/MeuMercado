@@ -1550,6 +1550,25 @@ def _ia_guard(request: Request):
     return None
 
 
+def _specs_grounding(titulo: str, catalog_product_id: str = "") -> str:
+    """Specs reais do catálogo (best-effort): match direto por id, senão por título."""
+    try:
+        specs = ""
+        if catalog_product_id.strip():
+            specs = meli.get_product_specs_by_id(catalog_product_id)
+        return specs or meli.get_product_specs(titulo)
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def _marca_do_item(item: dict) -> str:
+    """Extrai a marca (atributo BRAND) de um anúncio, se houver."""
+    for a in item.get("attributes") or []:
+        if a.get("id") == "BRAND":
+            return (a.get("value_name") or "").strip()
+    return ""
+
+
 @app.post("/ia/descricao")
 def ia_descricao(
     request: Request,
@@ -1561,23 +1580,36 @@ def ia_descricao(
     erro = _ia_guard(request)
     if erro:
         return erro
-    # Grounding: especificações reais do catálogo do ML (best-effort).
-    # Se o item já traz o catalog_product_id (tela de editar), usa o match direto;
-    # caso contrário, busca pelo título.
-    specs = ""
-    try:
-        if catalog_product_id.strip():
-            specs = meli.get_product_specs_by_id(catalog_product_id)
-        if not specs:
-            specs = meli.get_product_specs(titulo)
-    except Exception:  # noqa: BLE001
-        specs = ""
+    # Grounding: especificações reais do catálogo do ML (match direto por id, senão título).
+    specs = _specs_grounding(titulo, catalog_product_id)
     texto = ia.gerar_descricao(titulo, marca, specs=specs)
     if not texto:
         return JSONResponse(
             {"ok": False, "erro": "Não foi possível gerar a descrição. O Ollama está em execução?"}
         )
     return JSONResponse({"ok": True, "texto": texto})
+
+
+@app.post("/ia/reescrever-anuncio")
+def ia_reescrever_anuncio(request: Request, item_id: str = Form(...)):
+    """A partir de um anúncio existente, sugere título e descrição melhores (IA + catálogo)."""
+    erro = _ia_guard(request)
+    if erro:
+        return erro
+    try:
+        item = meli.get_item(item_id)
+    except Exception:  # noqa: BLE001
+        return JSONResponse({"ok": False, "erro": "Não foi possível carregar o anúncio."})
+    titulo = item.get("title") or ""
+    marca = _marca_do_item(item)
+    specs = _specs_grounding(titulo, item.get("catalog_product_id") or "")
+    titulo_sugerido = ia.melhorar_titulo(titulo, marca)
+    descricao_sugerida = ia.gerar_descricao(titulo, marca, specs=specs)
+    if not titulo_sugerido and not descricao_sugerida:
+        return JSONResponse(
+            {"ok": False, "erro": "Não foi possível gerar sugestões. O Ollama está em execução?"}
+        )
+    return JSONResponse({"ok": True, "titulo": titulo_sugerido, "descricao": descricao_sugerida})
 
 
 @app.post("/ia/reclamacao")
