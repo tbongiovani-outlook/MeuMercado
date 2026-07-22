@@ -379,12 +379,12 @@ curl -X POST \
 
 ### 💡 Ideias para o futuro (backlog)
 
-- [ ] Caixa de entrada unificada (perguntas, reclamações, vendas a enviar, estoque baixo)
-- [ ] Atalhos de teclado para navegação e ações rápidas
-- [ ] Testes automatizados (pytest)
-- [ ] Modo escuro (tema claro/escuro)
-- [ ] Tratamento de rate limit (429) com retentativa/backoff
-- [ ] Aplicativo instalável (PWA) e notificações desktop
+- [x] Caixa de entrada unificada (perguntas, reclamações, vendas a enviar, estoque baixo)
+- [x] Atalhos de teclado para navegação e ações rápidas
+- [x] Testes automatizados (pytest)
+- [x] Modo escuro (tema claro/escuro)
+- [x] Tratamento de rate limit (429) com retentativa/backoff
+- [x] Aplicativo instalável (PWA) e notificações desktop
 - [ ] Sugestão de resposta com IA e multi-conta do Mercado Livre
 
 ---

@@ -13,6 +13,19 @@ def test_home_sem_usuario_redireciona_criar_conta(client):
     assert r.headers["location"] == "/criar-conta"
 
 
+def test_service_worker_servido_na_raiz(client):
+    r = client.get("/sw.js")
+    assert r.status_code == 200
+    assert "javascript" in r.headers["content-type"]
+    assert r.headers["service-worker-allowed"] == "/"
+
+
+def test_manifest_pwa_disponivel(client):
+    r = client.get("/static/manifest.webmanifest")
+    assert r.status_code == 200
+    assert "Meu Mercado" in r.text
+
+
 def test_criar_conta_get(client):
     assert client.get("/criar-conta").status_code == 200
 
