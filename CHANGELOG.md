@@ -5,6 +5,10 @@ Registro das mudanças implementadas (gerado automaticamente a cada merge na `ma
 <!-- novas-entradas -->
 ## 2026-07-22
 
+- feat(ia): grounding da descricao com specs reais do catalogo ML (73baeaa)
+
+## 2026-07-22
+
 - fix(ia): reforca regra anti-alucinacao de specs na descricao (926602a)
 - fix(ia): descricao nao ecoa mais a instrucao do prompt (627ade0)
 - feat: modelo de IA padrao passa a ser qwen2.5:3b (melhor PT-BR) (b96aae2)
