@@ -218,6 +218,23 @@ def test_gerar_descricao_sucesso(temp_db, monkeypatch):
     assert ia.gerar_descricao("Camiseta", marca="Nike") == "Descrição top"
 
 
+def test_gerar_descricao_remove_eco_instrucao(temp_db, monkeypatch):
+    database.set_config("ia_habilitada", "1")
+    vazado = (
+        "2 a 3 parágrafos curtos e persuasivos destacando benefícios e usos do "
+        "produto: Aproveite a água. Especificações técnicas: - Marca: Minalba"
+    )
+    monkeypatch.setattr(ia.httpx, "post", _resp_ok(vazado))
+    saida = ia.gerar_descricao("Água Mineral")
+    assert saida.startswith("Aproveite a água.")
+    assert "parágrafos" not in saida
+
+
+def test_descricao_ajustada_preserva_texto_limpo():
+    limpo = "Água mineral ótima. Especificações técnicas: - Marca: Minalba"
+    assert ia._descricao_ajustada(limpo) == limpo
+
+
 def test_sugerir_reclamacao_sucesso(temp_db, monkeypatch):
     database.set_config("ia_habilitada", "1")
     monkeypatch.setattr(ia.httpx, "post", _resp_ok("Lamento o ocorrido."))

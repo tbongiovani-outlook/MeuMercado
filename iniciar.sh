@@ -52,7 +52,7 @@ fi
 
 # 5.5) IA local opcional (Ollama) - so quando MM_COM_IA=1
 if [ "$MM_COM_IA" = "1" ]; then
-    MODELO="${MM_IA_MODELO:-llama3.2:3b}"
+    MODELO="${MM_IA_MODELO:-qwen2.5:3b}"
     if ! command -v ollama >/dev/null 2>&1; then
         echo "Instalando a IA local (Ollama) - opcional..."
         if command -v brew >/dev/null 2>&1; then

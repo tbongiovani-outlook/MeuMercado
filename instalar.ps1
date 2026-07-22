@@ -75,7 +75,7 @@ function Instalar-Python {
 function Instalar-Ollama {
     # IA local opcional (Ollama). So roda se o usuario pedir: $env:MM_COM_IA = "1".
     # Silencioso e sem admin. O app funciona sem isso (cai na sugestao por palavras-chave).
-    $modelo = if ($env:MM_IA_MODELO) { $env:MM_IA_MODELO } else { "llama3.2:3b" }
+    $modelo = if ($env:MM_IA_MODELO) { $env:MM_IA_MODELO } else { "qwen2.5:3b" }
     Escrever "Instalando a IA local (Ollama) - opcional, pode baixar ~2 GB..." "Yellow"
     if (-not (Get-Command ollama -ErrorAction SilentlyContinue)) {
         $wg = Get-Command winget -ErrorAction SilentlyContinue

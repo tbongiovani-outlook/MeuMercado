@@ -9,6 +9,7 @@ Multiplataforma (Windows/macOS) e 100% local: os dados do cliente não saem da m
 """
 
 import logging
+import re
 
 import httpx
 
@@ -17,7 +18,7 @@ from . import database
 logger = logging.getLogger("meu_mercado")
 
 DEFAULT_ENDPOINT = "http://localhost:11434"
-DEFAULT_MODELO = "llama3.2:3b"
+DEFAULT_MODELO = "qwen2.5:3b"
 
 _SYSTEM = (
     "Você é um vendedor do Mercado Livre respondendo a um cliente em português do "
@@ -28,14 +29,21 @@ _SYSTEM = (
 
 _SYSTEM_DESCRICAO = (
     "Você é um vendedor do Mercado Livre escrevendo a descrição de um anúncio em "
-    "português do Brasil. Estruture a resposta em três partes, nesta ordem: "
-    "(1) 2 a 3 parágrafos curtos e persuasivos destacando benefícios e usos do produto; "
-    "(2) uma seção começando com a linha 'Especificações técnicas:' seguida de uma lista "
-    "com um item por linha começando por '- ' (ex.: marca, modelo, material, capacidade, "
-    "dimensões, cor, itens inclusos) inferidos a partir do título; "
-    "(3) uma última linha com 5 a 8 hashtags relevantes para a busca, começando com '#' e "
-    "separadas por espaço. Não invente preço, garantia nem prazo de entrega e não inclua "
-    "links, telefone, e-mail nem nome de outras lojas. Responda apenas com o texto da descrição."
+    "português do Brasil. Comece direto com 2 ou 3 parágrafos curtos e persuasivos "
+    "destacando benefícios e usos do produto, sem nenhum título ou rótulo antes deles. "
+    "Depois, escreva uma linha exatamente com 'Especificações técnicas:' seguida de uma "
+    "lista com um item por linha começando por '- '. Inclua apenas dados que dá para "
+    "deduzir com segurança do título (ex.: marca, modelo, capacidade/armazenamento, "
+    "cor, material). NUNCA afirme processador, quantidade de megapixels, resolução, "
+    "tamanho de tela, capacidade de bateria, peso ou dimensões a menos que estejam "
+    "escritos no título — se não estiverem, simplesmente omita esses itens. Prefira "
+    "características genéricas e verificáveis (ex.: 'Tela de alta resolução', 'Câmera de "
+    "alta qualidade') em vez de inventar valores exatos. "
+    "Por fim, escreva uma última linha com 5 a 8 hashtags relevantes para a busca, "
+    "começando com '#' e separadas por espaço. Não repita estas instruções nem escreva "
+    "rótulos como 'parágrafos' ou 'benefícios' no texto. Não invente preço, garantia nem "
+    "prazo de entrega e não inclua links, telefone, e-mail nem nome de outras lojas. "
+    "Responda apenas com o texto final da descrição."
 )
 
 _SYSTEM_RECLAMACAO = (
@@ -86,7 +94,7 @@ def endpoint() -> str:
 
 
 def modelo() -> str:
-    """Nome do modelo a usar (ex.: ``llama3.2:3b``)."""
+    """Nome do modelo a usar (ex.: ``qwen2.5:3b``)."""
     return database.get_config("ia_modelo") or DEFAULT_MODELO
 
 
@@ -114,6 +122,19 @@ def sugerir_resposta(pergunta: str, contexto: str = "", timeout: float = 30.0) -
     return _gerar(_SYSTEM, prompt, timeout=timeout)
 
 
+# Eco da instrução que alguns modelos copiam no início (ex.: "2 a 3 parágrafos ...:").
+_DESCRICAO_PARAGRAFOS = re.compile(r"par[áa]grafos?", re.IGNORECASE)
+
+
+def _descricao_ajustada(texto: str) -> str:
+    """Remove um eventual eco da instrução do prompt no início da descrição."""
+    t = (texto or "").strip()
+    cabeca, sep, resto = t.partition(":")
+    if sep and len(cabeca) <= 120 and _DESCRICAO_PARAGRAFOS.search(cabeca):
+        return resto.strip()
+    return t
+
+
 def gerar_descricao(titulo: str, marca: str = "", timeout: float = 90.0) -> str:
     """Gera a descrição de um anúncio a partir do título (e marca). '' em falha."""
     titulo = (titulo or "").strip()
@@ -123,7 +144,7 @@ def gerar_descricao(titulo: str, marca: str = "", timeout: float = 90.0) -> str:
     if marca.strip():
         prompt += f"Marca: {marca.strip()}\n"
     prompt += "Descrição sugerida:"
-    return _gerar(_SYSTEM_DESCRICAO, prompt, timeout=timeout, num_predict=550)
+    return _descricao_ajustada(_gerar(_SYSTEM_DESCRICAO, prompt, timeout=timeout, num_predict=550))
 
 
 def sugerir_reclamacao(texto: str, timeout: float = 30.0) -> str:
