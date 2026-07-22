@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Assistente de vendas · Meu Mercado{% endblock %}
+
+{% block nav %}{% include "_nav.html" %}{% endblock %}
+
+{% block hero %}
+<header class="page-header">
+    <div>
+        <h1 class="page-header__title">Assistente de vendas</h1>
+        <p class="page-header__sub">Tire dúvidas sobre vender no Mercado Livre com a IA local (Ollama).</p>
+    </div>
+</header>
+{% endblock %}
+
+{% block content %}
+{% if not ia_on %}
+<section class="card">
+    <p>O assistente usa a <strong>IA local (Ollama)</strong>, que está <strong>desligada</strong>.
+        Ative em <a href="/configuracao">Configuração</a> ou veja como configurar na
+        <a href="/ajuda">Ajuda</a>.</p>
+</section>
+{% else %}
+<section class="card">
+    <label class="field">
+        <span>Sua pergunta</span>
+        <textarea id="ia-pergunta" rows="3" maxlength="1000"
+                  placeholder="Ex.: Como melhorar meu posicionamento na busca do Mercado Livre?"></textarea>
+    </label>
+    <p>
+        <button type="button" class="btn btn--primary" id="btn-ia-assistente">✨ Perguntar</button>
+    </p>
+    <div id="ia-resposta" class="ia-resumo-saida" hidden></div>
+    <p class="muted">As respostas são geradas localmente e podem conter imprecisões — use como orientação,
+        não como aconselhamento definitivo.</p>
+</section>
+
+<section class="card">
+    <h2>Exemplos de perguntas</h2>
+    <ul>
+        <li>Como escrever um título que apareça mais na busca?</li>
+        <li>O que faço quando um comprador pede desconto?</li>
+        <li>Como reduzir reclamações de pós-venda?</li>
+        <li>Vale a pena oferecer frete grátis no meu anúncio?</li>
+    </ul>
+</section>
+{% endif %}
+{% endblock %}

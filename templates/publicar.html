@@ -38,6 +38,7 @@
                 <span>Título do anúncio <em class="req">*</em></span>
                 <input type="text" name="title" required value="{{ form.title or '' }}"
                        placeholder="Ex.: Água Mineral Minalba 1 Litro">
+                {% if ia_on %}<button type="button" class="btn btn--ghost btn--sm btn-ia-titulo" title="Sugerir título mais vendável com IA local">✨ Melhorar título</button>{% endif %}
                 <small class="hint">Inclua marca, modelo e características principais (até 60 caracteres).</small>
             </label>
             <label class="field">
