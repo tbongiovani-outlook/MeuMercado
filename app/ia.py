@@ -149,7 +149,14 @@ def melhorar_titulo(titulo: str, marca: str = "", timeout: float = 30.0) -> str:
         prompt += f"Marca: {marca.strip()}\n"
     prompt += "Novo título:"
     novo = _gerar(_SYSTEM_TITULO, prompt, timeout=timeout, num_predict=80)
-    return novo[:60].strip()
+    novo = novo.strip().strip('"').strip()
+    if len(novo) <= 60:
+        return novo
+    # Trunca em 60 sem cortar no meio da palavra.
+    corte = novo[:60]
+    if " " in corte:
+        corte = corte.rsplit(" ", 1)[0]
+    return corte.strip()
 
 
 def variar_resposta(texto: str, timeout: float = 30.0) -> str:

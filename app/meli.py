@@ -546,6 +546,11 @@ def update_item_description(item_id: str, text: str) -> dict:
     return api_put(f"/items/{item_id}/description", {"plain_text": text})
 
 
+def create_item_description(item_id: str, text: str) -> dict:
+    """Cria a descrição de um anúncio recém-publicado (POST)."""
+    return api_post(f"/items/{item_id}/description", {"plain_text": text})
+
+
 def list_item_ids(user_id: int, limit: int = 50) -> list[str]:
     data = api_get(f"/users/{user_id}/items/search", {"limit": limit})
     return data.get("results", [])

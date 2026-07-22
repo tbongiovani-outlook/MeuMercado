@@ -169,6 +169,33 @@ def test_publicar(auth_client):
     assert r.status_code == 200
 
 
+def test_publicar_com_descricao(auth_client, monkeypatch):
+    from app import meli
+
+    chamado = {}
+    monkeypatch.setattr(
+        meli,
+        "create_item_description",
+        lambda iid, text: chamado.update(id=iid, text=text) or {},
+    )
+    r = auth_client.post(
+        "/publicar",
+        data={
+            "title": "Meu produto novo de teste",
+            "price": 99.9,
+            "available_quantity": 3,
+            "condition": "new",
+            "listing_type_id": "gold_special",
+            "category_id": "MLB1234",
+            "description": "Uma descrição bem legal do produto.",
+        },
+        follow_redirects=False,
+    )
+    assert r.status_code == 200
+    assert chamado.get("text") == "Uma descrição bem legal do produto."
+    assert chamado.get("id") == "MLBNEW"
+
+
 def test_anuncio_status(auth_client):
     r = auth_client.post("/anuncios/MLB1/status", data={"status": "paused"}, follow_redirects=False)
     assert r.status_code == 303

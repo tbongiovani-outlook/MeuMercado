@@ -318,6 +318,16 @@ def test_melhorar_titulo_trunca_60(temp_db, monkeypatch):
     assert len(novo) == 60
 
 
+def test_melhorar_titulo_nao_corta_no_meio_da_palavra(temp_db, monkeypatch):
+    database.set_config("ia_habilitada", "1")
+    longo = "iPhone 16 Pro Smartphone de Alta Definicao com Camera Excelente Demais"
+    monkeypatch.setattr(ia.httpx, "post", _resp_ok(longo))
+    novo = ia.melhorar_titulo("iPhone")
+    assert len(novo) <= 60
+    assert not novo.endswith(" ")
+    assert longo.startswith(novo)  # é um prefixo cortado num espaço
+
+
 def test_variar_resposta_sucesso(temp_db, monkeypatch):
     database.set_config("ia_habilitada", "1")
     monkeypatch.setattr(ia.httpx, "post", _resp_ok("Outra forma de dizer."))
