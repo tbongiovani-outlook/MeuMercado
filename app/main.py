@@ -20,7 +20,7 @@ from datetime import UTC, datetime, timedelta
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
-from fastapi.responses import PlainTextResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -93,6 +93,17 @@ app.add_middleware(
 )
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+
+@app.get("/sw.js", include_in_schema=False)
+def _service_worker() -> FileResponse:
+    """Serve o service worker na raiz para que seu escopo cubra todo o site (PWA)."""
+    return FileResponse(
+        "static/sw.js",
+        media_type="application/javascript",
+        headers={"Service-Worker-Allowed": "/", "Cache-Control": "no-cache"},
+    )
+
 
 _METODOS_INSEGUROS = {"POST", "PUT", "PATCH", "DELETE"}
 

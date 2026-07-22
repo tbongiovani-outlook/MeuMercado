@@ -16,7 +16,55 @@ _TIMEOUT = 30
 # Renova o token com esta antecedência (segundos) antes de expirar.
 _REFRESH_MARGIN = 60
 
+# Retentativa com backoff exponencial para respostas temporárias (rate limit / 5xx).
+_MAX_RETRIES = 3
+_BACKOFF_BASE = 0.5  # segundos: 0.5, 1, 2 ...
+_STATUS_RETRIAVEL = frozenset({429, 500, 502, 503, 504})
+
 _logger = logging.getLogger("meu_mercado.meli")
+
+
+def _sleep(segundos: float) -> None:
+    """Ponto único de espera entre tentativas (facilita os testes)."""
+    time.sleep(segundos)
+
+
+def _retry_after(resp: httpx.Response, tentativa: int) -> float:
+    """Quanto esperar antes da próxima tentativa (respeita o cabeçalho Retry-After)."""
+    cabecalho = resp.headers.get("Retry-After")
+    if cabecalho:
+        try:
+            return max(0.0, float(cabecalho))
+        except ValueError:
+            pass
+    return _BACKOFF_BASE * (2**tentativa)
+
+
+def _request(method: str, url: str, **kwargs) -> httpx.Response:
+    """Executa uma requisição HTTP com retentativa/backoff em 429 e 5xx.
+
+    Respeita o cabeçalho ``Retry-After`` quando presente; caso contrário usa
+    backoff exponencial. Após esgotar as tentativas, devolve a última resposta
+    (o chamador decide via ``raise_for_status``).
+    """
+    kwargs.setdefault("timeout", _TIMEOUT)
+    resp = None
+    for tentativa in range(_MAX_RETRIES + 1):
+        resp = httpx.request(method, url, **kwargs)
+        if resp.status_code not in _STATUS_RETRIAVEL or tentativa == _MAX_RETRIES:
+            return resp
+        espera = _retry_after(resp, tentativa)
+        _logger.warning(
+            "%s %s -> %s; retentando em %.1fs (tentativa %d/%d)",
+            method,
+            url,
+            resp.status_code,
+            espera,
+            tentativa + 1,
+            _MAX_RETRIES,
+        )
+        _sleep(espera)
+    return resp  # pragma: no cover — o laço sempre retorna antes
 
 
 def generate_pkce_pair() -> tuple[str, str]:
@@ -101,11 +149,11 @@ def api_get(path: str, params: dict | None = None) -> dict:
     access = get_valid_access_token()
     if not access:
         raise RuntimeError("Sem token válido. Faça login novamente.")
-    resp = httpx.get(
+    resp = _request(
+        "GET",
         f"{settings.meli_api_base}{path}",
         params=params,
         headers={"Authorization": f"Bearer {access}"},
-        timeout=_TIMEOUT,
     )
     if resp.status_code >= 400:
         _logger.warning("GET %s -> %s", path, resp.status_code)
@@ -118,14 +166,14 @@ def api_post(path: str, payload: dict) -> dict:
     access = get_valid_access_token()
     if not access:
         raise RuntimeError("Sem token válido. Faça login novamente.")
-    resp = httpx.post(
+    resp = _request(
+        "POST",
         f"{settings.meli_api_base}{path}",
         json=payload,
         headers={
             "Authorization": f"Bearer {access}",
             "Content-Type": "application/json",
         },
-        timeout=_TIMEOUT,
     )
     if resp.status_code >= 400:
         _logger.warning("POST %s -> %s: %s", path, resp.status_code, resp.text[:400])
@@ -138,14 +186,14 @@ def api_put(path: str, payload: dict) -> dict:
     access = get_valid_access_token()
     if not access:
         raise RuntimeError("Sem token válido. Faça login novamente.")
-    resp = httpx.put(
+    resp = _request(
+        "PUT",
         f"{settings.meli_api_base}{path}",
         json=payload,
         headers={
             "Authorization": f"Bearer {access}",
             "Content-Type": "application/json",
         },
-        timeout=_TIMEOUT,
     )
     if resp.status_code >= 400:
         _logger.warning("PUT %s -> %s: %s", path, resp.status_code, resp.text[:400])
@@ -212,11 +260,11 @@ def remove_item_promotion(item_id: str, promotion_id: str, promotion_type: str) 
         "promotion_id": promotion_id,
         "promotion_type": promotion_type,
     }
-    resp = httpx.delete(
+    resp = _request(
+        "DELETE",
         f"{settings.meli_api_base}/seller-promotions/items/{item_id}",
         params=params,
         headers={"Authorization": f"Bearer {access}"},
-        timeout=_TIMEOUT,
     )
     if resp.status_code >= 400:
         _logger.warning("DELETE promo %s -> %s: %s", item_id, resp.status_code, resp.text[:300])
@@ -246,9 +294,9 @@ def predict_category(title: str, site: str = "MLB") -> dict:
 
 def get_category_attributes(category_id: str) -> list[dict]:
     """Atributos de uma categoria (endpoint público, sem autenticação)."""
-    resp = httpx.get(
+    resp = _request(
+        "GET",
         f"{settings.meli_api_base}/categories/{category_id}/attributes",
-        timeout=_TIMEOUT,
     )
     resp.raise_for_status()
     return resp.json()
@@ -307,11 +355,11 @@ def upload_picture(content: bytes, filename: str, content_type: str) -> str:
     access = get_valid_access_token()
     if not access:
         raise RuntimeError("Sem token válido. Faça login novamente.")
-    resp = httpx.post(
+    resp = _request(
+        "POST",
         f"{settings.meli_api_base}/pictures/items/upload",
         headers={"Authorization": f"Bearer {access}"},
         files={"file": (filename, content, content_type or "image/jpeg")},
-        timeout=_TIMEOUT,
     )
     if resp.status_code >= 400:
         _logger.warning("upload picture -> %s: %s", resp.status_code, resp.text[:400])
@@ -619,14 +667,14 @@ def get_billing_summary(user_id: int) -> dict:
 
 
 def _post_token(data: dict) -> dict:
-    resp = httpx.post(
+    resp = _request(
+        "POST",
         f"{settings.meli_api_base}/oauth/token",
         data=data,
         headers={
             "accept": "application/json",
             "content-type": "application/x-www-form-urlencoded",
         },
-        timeout=_TIMEOUT,
     )
     resp.raise_for_status()
     return resp.json()

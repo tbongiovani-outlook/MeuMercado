@@ -1,0 +1,33 @@
+{
+  "name": "Meu Mercado",
+  "short_name": "Meu Mercado",
+  "description": "Painel local para vendedores do Mercado Livre: anúncios, vendas, pós-venda, preços e tendências em um só lugar.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f5f6fb",
+  "theme_color": "#4f46e5",
+  "categories": ["business", "productivity", "shopping"],
+  "icons": [
+    {
+      "src": "/static/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    { "name": "Caixa de entrada", "url": "/caixa-entrada" },
+    { "name": "Publicar anúncio", "url": "/publicar" },
+    { "name": "Pós-venda", "url": "/pos-venda" }
+  ]
+}
