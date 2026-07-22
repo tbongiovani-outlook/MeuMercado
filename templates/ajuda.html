@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}Ajuda · Meu Mercado{% endblock %}
+
+{% block nav %}{% include "_nav.html" %}{% endblock %}
+
+{% block hero %}
+<header class="page-header">
+    <div>
+        <h1 class="page-header__title">Ajuda</h1>
+        <p class="page-header__sub">Como configurar o Meu Mercado e ajustar as sugestões de resposta com IA local (Ollama).</p>
+    </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h2>Índice</h2>
+    <ul class="help-index">
+        <li><a href="#config">Configurações do aplicativo</a></li>
+        <li><a href="#ia">Sugestão de resposta com IA local (Ollama)</a></li>
+        <li><a href="#ia-instalar">Instalar e ligar o Ollama</a></li>
+        <li><a href="#ia-modelos">Trocar o modelo de IA</a></li>
+        <li><a href="#ia-usar">Como usar a sugestão nas telas</a></li>
+        <li><a href="#ia-problemas">Problemas comuns</a></li>
+    </ul>
+</section>
+
+<section class="card" id="config">
+    <h2>Configurações do aplicativo</h2>
+    <p class="muted">Todas as configurações ficam em <a href="/configuracao">Configuração</a> e são
+        guardadas apenas nesta máquina.</p>
+    <dl class="help-dl">
+        <dt>Conta do Mercado Livre</dt>
+        <dd>Conecte sua conta para o app ler seus anúncios, vendas e perguntas. Você pode
+            desconectar a qualquer momento sem sair do sistema.</dd>
+
+        <dt>Client ID / Client Secret / redirect_uri</dt>
+        <dd>Credenciais da sua aplicação criada no
+            <a href="https://developers.mercadolivre.com.br/devcenter" target="_blank" rel="noopener">DevCenter</a>.
+            O <em>redirect_uri</em> normalmente não precisa ser alterado.</dd>
+
+        <dt>Alerta de estoque baixo</dt>
+        <dd>O painel avisa quando um anúncio ativo tiver estoque igual ou abaixo do valor definido.</dd>
+
+        <dt>Validade do cache (minutos)</dt>
+        <dd>Painel e Tendências reutilizam dados salvos por esse tempo para carregar mais rápido.
+            Use <code>0</code> para sempre buscar online, ou clique em “Atualizar agora” nas telas.</dd>
+    </dl>
+</section>
+
+<section class="card" id="ia">
+    <h2>Sugestão de resposta com IA local (Ollama)</h2>
+    <p>
+        O Meu Mercado pode sugerir respostas para as perguntas dos clientes usando um modelo de
+        IA que roda <strong>na sua própria máquina</strong> através do
+        <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a>.
+        É <strong>gratuito</strong>, funciona <strong>offline</strong> e os dados do cliente
+        <strong>não saem do seu computador</strong>.
+    </p>
+
+    <div class="ia-status" id="ia-status" data-habilitada="{{ 'sim' if ia_habilitada else 'nao' }}">
+        <p>
+            Estado atual:
+            {% if ia_habilitada %}
+            <span class="badge badge--ok">Ligada</span>
+            {% else %}
+            <span class="badge">Desligada</span>
+            {% endif %}
+            <span class="muted">· Endereço: <code>{{ ia_endpoint }}</code> · Modelo: <code>{{ ia_modelo }}</code></span>
+        </p>
+        <p>
+            <button type="button" class="btn btn--ghost btn--sm" id="btn-testar-ia">Testar conexão com o Ollama</button>
+            <span id="ia-status-result" class="muted"></span>
+        </p>
+    </div>
+
+    <p class="muted">
+        Se a IA estiver desligada ou o Ollama não estiver em execução, o app continua funcionando
+        normalmente e sugere respostas por <strong>palavras-chave</strong> (a partir das suas
+        <a href="/respostas">respostas rápidas</a>).
+    </p>
+</section>
+
+<section class="card" id="ia-instalar">
+    <h2>Instalar e ligar o Ollama</h2>
+    <ol class="help-steps">
+        <li>Baixe e instale o Ollama em <a href="https://ollama.com/download" target="_blank" rel="noopener">ollama.com/download</a>
+            (Windows e macOS, não precisa de administrador). Ele roda em segundo plano e atende em
+            <code>http://localhost:11434</code>.</li>
+        <li>Baixe um modelo uma única vez. No terminal:
+            <pre class="help-code"><code>ollama pull llama3.2:3b</code></pre>
+        </li>
+        <li>No Meu Mercado, abra <a href="/configuracao">Configuração</a>, marque
+            <em>“Ativar sugestões de resposta com IA local (Ollama)”</em> e salve.</li>
+        <li>Volte aqui e clique em <strong>“Testar conexão com o Ollama”</strong> para confirmar.</li>
+    </ol>
+    <p class="muted">Dica: também é possível instalar o Ollama junto no setup do app usando a variável
+        <code>MM_COM_IA=1</code> (veja o README).</p>
+</section>
+
+<section class="card" id="ia-modelos">
+    <h2>Trocar o modelo de IA</h2>
+    <p>O modelo é definido em <a href="/configuracao">Configuração → Modelo de IA</a>. Depois de baixar
+        um modelo com <code>ollama pull &lt;modelo&gt;</code>, basta informar o nome dele ali.</p>
+    <table class="help-table">
+        <thead><tr><th>Modelo</th><th>Tamanho aprox.</th><th>Perfil</th></tr></thead>
+        <tbody>
+            <tr><td><code>llama3.2:3b</code></td><td>~2 GB</td><td>Padrão — rápido e leve (recomendado)</td></tr>
+            <tr><td><code>llama3.2:1b</code></td><td>~1.3 GB</td><td>Mais rápido, respostas mais simples</td></tr>
+            <tr><td><code>qwen2.5:3b</code></td><td>~2 GB</td><td>Boa alternativa em português</td></tr>
+            <tr><td><code>llama3.1:8b</code></td><td>~4.7 GB</td><td>Respostas melhores, exige mais máquina</td></tr>
+        </tbody>
+    </table>
+    <p class="muted">Modelos menores respondem mais rápido; modelos maiores dão respostas mais elaboradas,
+        mas exigem mais memória e podem ficar lentos sem placa de vídeo.</p>
+</section>
+
+<section class="card" id="ia-usar">
+    <h2>Como usar a sugestão nas telas</h2>
+    <p>Com a IA ligada, aparece o botão <strong>✨ IA</strong> ao lado dos campos de resposta em:</p>
+    <ul>
+        <li><a href="/pos-venda">Pós-venda</a> — perguntas dos anúncios;</li>
+        <li><a href="/caixa-entrada">Caixa de entrada</a> — perguntas não respondidas;</li>
+        <li>Mensagens de uma venda (a partir de <a href="/vendas">Vendas</a>).</li>
+    </ul>
+    <p>Clique em <strong>✨ IA</strong> para gerar uma sugestão e preencher o campo. A resposta é apenas
+        um rascunho: <strong>revise e edite</strong> antes de enviar. Nada é enviado automaticamente.</p>
+</section>
+
+<section class="card" id="ia-problemas">
+    <h2>Problemas comuns</h2>
+    <dl class="help-dl">
+        <dt>O botão ✨ IA não aparece</dt>
+        <dd>A IA está desligada. Ative em <a href="/configuracao">Configuração</a>.</dd>
+
+        <dt>“Não foi possível gerar uma sugestão. O Ollama está em execução?”</dt>
+        <dd>O Ollama não está rodando ou o modelo não foi baixado. Abra o app do Ollama e rode
+            <code>ollama pull llama3.2:3b</code>. Use o botão de teste acima para confirmar.</dd>
+
+        <dt>As respostas demoram muito</dt>
+        <dd>Use um modelo menor (ex.: <code>llama3.2:1b</code>) ou feche outros programas pesados.</dd>
+
+        <dt>Mudei o endereço/porta do Ollama</dt>
+        <dd>Ajuste o campo <em>Endereço do Ollama</em> em <a href="/configuracao">Configuração</a>.</dd>
+    </dl>
+</section>
+
+<script>
+    (function () {
+        var btn = document.getElementById("btn-testar-ia");
+        var out = document.getElementById("ia-status-result");
+        if (!btn || !out) return;
+        btn.addEventListener("click", function () {
+            out.textContent = "Testando…";
+            btn.disabled = true;
+            fetch("/ia/status", { headers: { "Accept": "application/json" } })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d || !d.ok) {
+                        out.textContent = "Não foi possível verificar. Faça login novamente.";
+                        return;
+                    }
+                    if (!d.habilitada) {
+                        out.textContent = "IA desligada nas configurações.";
+                    } else if (d.disponivel) {
+                        out.textContent = "✅ Ollama respondendo em " + d.endpoint + " (modelo " + d.modelo + ").";
+                    } else {
+                        out.textContent = "⚠️ IA ligada, mas o Ollama não respondeu em " + d.endpoint + ". Ele está em execução?";
+                    }
+                })
+                .catch(function () { out.textContent = "Falha ao contatar o servidor."; })
+                .finally(function () { btn.disabled = false; });
+        });
+    })();
+</script>
+{% endblock %}

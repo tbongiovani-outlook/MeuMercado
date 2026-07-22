@@ -1510,6 +1510,23 @@ def ia_sugerir(request: Request, pergunta: str = Form(...)):
     return JSONResponse({"ok": True, "sugestao": sugestao})
 
 
+@app.get("/ia/status")
+def ia_status(request: Request):
+    """Estado atual da IA local (Ollama). Usado pelo botão 'Testar' na Ajuda."""
+    if not _current_user_id(request):
+        return JSONResponse({"ok": False, "erro": "Sessão expirada."}, status_code=401)
+    habilitada = ia.habilitada()
+    return JSONResponse(
+        {
+            "ok": True,
+            "habilitada": habilitada,
+            "disponivel": ia.disponivel() if habilitada else False,
+            "endpoint": ia.endpoint(),
+            "modelo": ia.modelo(),
+        }
+    )
+
+
 @app.post("/pos-venda/responder")
 def responder_pergunta(request: Request, question_id: int = Form(...), text: str = Form(...)):
     redirect, _ = _require_ready(request)
@@ -1987,6 +2004,22 @@ def respostas_form(request: Request):
     ctx = _base_context(request)
     ctx["respostas"] = database.list_quick_replies()
     return templates.TemplateResponse(request, "respostas.html", ctx)
+
+
+@app.get("/ajuda")
+def ajuda(request: Request):
+    """Central de ajuda: configurações do app e como ajustar a IA local (Ollama)."""
+    if not _current_user_id(request):
+        return _redirect("/entrar")
+    ctx = _base_context(request)
+    ctx.update(
+        {
+            "ia_habilitada": ia.habilitada(),
+            "ia_endpoint": database.get_config("ia_endpoint") or ia.DEFAULT_ENDPOINT,
+            "ia_modelo": database.get_config("ia_modelo") or ia.DEFAULT_MODELO,
+        }
+    )
+    return templates.TemplateResponse(request, "ajuda.html", ctx)
 
 
 @app.post("/respostas")

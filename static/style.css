@@ -1069,3 +1069,35 @@ code {
     font-weight: 700;
     line-height: 1.4;
 }
+
+/* Página de Ajuda */
+.badge--ok { background: #00a650; color: #fff; border-color: #00a650; }
+.help-index { margin: 0.25rem 0 0; padding-left: 1.1rem; columns: 2; column-gap: 2rem; }
+.help-index li { margin: 0.2rem 0; }
+.help-dl { margin: 0.5rem 0 0; }
+.help-dl dt { font-weight: 700; margin-top: 0.9rem; }
+.help-dl dd { margin: 0.2rem 0 0; color: var(--muted); }
+.help-steps { margin: 0.25rem 0 0; padding-left: 1.2rem; }
+.help-steps li { margin: 0.5rem 0; }
+.help-code {
+    margin: 0.4rem 0;
+    padding: 0.6rem 0.8rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow-x: auto;
+}
+.help-code code { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 0.85rem; }
+.help-table { width: 100%; border-collapse: collapse; margin: 0.5rem 0; }
+.help-table th, .help-table td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+.help-table th { font-weight: 700; color: var(--muted); }
+.ia-status {
+    margin: 0.75rem 0;
+    padding: 0.75rem 1rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+.ia-status p { margin: 0.35rem 0; }
+@media (max-width: 640px) { .help-index { columns: 1; } }
+
