@@ -83,6 +83,25 @@
             <small class="muted">Painel e Tendências reutilizam dados salvos por este tempo para carregar mais rápido.
                 Use 0 para sempre buscar online. Você também pode clicar em “Atualizar agora” nas telas.</small>
         </label>
+        <fieldset class="field" style="border:0;padding:0;margin:0">
+            <label class="check-inline">
+                <input type="checkbox" name="ia_habilitada" value="1" {% if ia_habilitada %}checked{% endif %}>
+                <span>Ativar sugestões de resposta com <strong>IA local (Ollama)</strong></span>
+            </label>
+            <small class="muted">100% local e gratuito — os dados do cliente não saem da sua máquina.
+                Requer o <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a> instalado e em execução.
+                Se estiver desligado, o app continua sugerindo por palavras-chave.</small>
+        </fieldset>
+        <label class="field">
+            <span>Endereço do Ollama</span>
+            <input type="text" name="ia_endpoint" value="{{ ia_endpoint }}" placeholder="http://localhost:11434">
+            <small class="muted">Normalmente não precisa alterar.</small>
+        </label>
+        <label class="field">
+            <span>Modelo de IA</span>
+            <input type="text" name="ia_modelo" value="{{ ia_modelo }}" placeholder="llama3.2:3b">
+            <small class="muted">Baixe uma vez com <code>ollama pull llama3.2:3b</code>. Modelos menores respondem mais rápido.</small>
+        </label>
         <button class="btn btn--primary" type="submit">Salvar configuração</button>
     </form>
 </section>

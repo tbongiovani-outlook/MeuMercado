@@ -63,6 +63,7 @@
                     </select>
                     {% endif %}
                     <input type="text" name="text" required maxlength="2000" value="{{ q.sugestao or '' }}" placeholder="Escreva a resposta…">
+                    {% if ia_on %}<button type="button" class="btn btn--ghost btn--sm btn-ia" data-pergunta="{{ q.text }}" title="Sugerir resposta com IA local">✨ IA</button>{% endif %}
                     <button class="btn btn--primary btn--sm" type="submit">Responder</button>
                 </form>
                 {% if q.sugestao %}<small class="hint">💡 Sugestão preenchida automaticamente — revise antes de enviar.</small>{% endif %}
