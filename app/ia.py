@@ -36,14 +36,27 @@ _SYSTEM_DESCRICAO = (
     "deduzir com segurança do título (ex.: marca, modelo, capacidade/armazenamento, "
     "cor, material). NUNCA afirme processador, quantidade de megapixels, resolução, "
     "tamanho de tela, capacidade de bateria, peso ou dimensões a menos que estejam "
-    "escritos no título — se não estiverem, simplesmente omita esses itens. Prefira "
-    "características genéricas e verificáveis (ex.: 'Tela de alta resolução', 'Câmera de "
-    "alta qualidade') em vez de inventar valores exatos. "
+    "escritos no título ou nas especificações fornecidas — se não estiverem, simplesmente "
+    "omita esses itens. Prefira características genéricas e verificáveis (ex.: 'Tela de "
+    "alta resolução', 'Câmera de alta qualidade') em vez de inventar valores exatos. "
+    "Se forem fornecidas especificações reais do produto, use EXATAMENTE esses valores na "
+    "seção 'Especificações técnicas:' (sem inventar outros) e, mesmo assim, comece pelos "
+    "parágrafos de venda antes da lista. "
     "Por fim, escreva uma última linha com 5 a 8 hashtags relevantes para a busca, "
     "começando com '#' e separadas por espaço. Não repita estas instruções nem escreva "
     "rótulos como 'parágrafos' ou 'benefícios' no texto. Não invente preço, garantia nem "
     "prazo de entrega e não inclua links, telefone, e-mail nem nome de outras lojas. "
     "Responda apenas com o texto final da descrição."
+)
+
+_SYSTEM_DESCRICAO_PARAGRAFOS = (
+    "Você é um vendedor do Mercado Livre escrevendo a descrição de um anúncio em "
+    "português do Brasil. Escreva APENAS 2 ou 3 parágrafos curtos e persuasivos "
+    "destacando benefícios e usos do produto. Não escreva especificações técnicas, "
+    "listas, hashtags, títulos nem rótulos. Não invente números técnicos (processador, "
+    "megapixels, resolução, bateria): fale dos benefícios de forma genérica. Não inclua "
+    "preço, garantia, prazo, links, telefone, e-mail nem nome de outras lojas. Responda "
+    "apenas com os parágrafos."
 )
 
 _SYSTEM_RECLAMACAO = (
@@ -135,14 +148,51 @@ def _descricao_ajustada(texto: str) -> str:
     return t
 
 
-def gerar_descricao(titulo: str, marca: str = "", timeout: float = 90.0) -> str:
-    """Gera a descrição de um anúncio a partir do título (e marca). '' em falha."""
+# Palavras que não viram hashtag útil.
+_HASHTAG_STOP = {"com", "para", "sem", "por", "dos", "das", "de", "da", "do", "e"}
+
+
+def _hashtags_de(titulo: str, marca: str = "", limite: int = 6) -> str:
+    """Monta hashtags a partir da marca e das palavras significativas do título."""
+    vistos: list[str] = []
+    minusculos: set[str] = set()
+    for palavra in re.findall(r"[0-9A-Za-zÀ-ÿ]+", f"{marca} {titulo}"):
+        chave = palavra.lower()
+        if len(palavra) < 3 or chave in _HASHTAG_STOP or chave in minusculos:
+            continue
+        vistos.append(palavra)
+        minusculos.add(chave)
+        if len(vistos) >= limite:
+            break
+    return " ".join("#" + p for p in vistos)
+
+
+def gerar_descricao(titulo: str, marca: str = "", specs: str = "", timeout: float = 90.0) -> str:
+    """Gera a descrição de um anúncio a partir do título (e marca). '' em falha.
+
+    Se ``specs`` (especificações reais do catálogo do ML) for informado, o modelo escreve
+    apenas os parágrafos de venda e a seção de especificações é montada no código com os
+    dados reais — garantindo specs corretos e estrutura consistente (grounding).
+    """
     titulo = (titulo or "").strip()
     if not titulo or not habilitada():
         return ""
+    specs = (specs or "").strip()
     prompt = f"Título do anúncio: {titulo}\n"
     if marca.strip():
         prompt += f"Marca: {marca.strip()}\n"
+    if specs:
+        prompt += "Descrição (só os parágrafos de venda):"
+        paragrafos = _descricao_ajustada(
+            _gerar(_SYSTEM_DESCRICAO_PARAGRAFOS, prompt, timeout=timeout, num_predict=280)
+        )
+        if not paragrafos:
+            return ""
+        partes = [paragrafos, f"Especificações técnicas:\n{specs}"]
+        tags = _hashtags_de(titulo, marca)
+        if tags:
+            partes.append(tags)
+        return "\n\n".join(partes)
     prompt += "Descrição sugerida:"
     return _descricao_ajustada(_gerar(_SYSTEM_DESCRICAO, prompt, timeout=timeout, num_predict=550))
 

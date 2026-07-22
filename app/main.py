@@ -1556,7 +1556,13 @@ def ia_descricao(request: Request, titulo: str = Form(...), marca: str = Form(""
     erro = _ia_guard(request)
     if erro:
         return erro
-    texto = ia.gerar_descricao(titulo, marca)
+    # Grounding: busca especificações reais no catálogo do ML (best-effort).
+    specs = ""
+    try:
+        specs = meli.get_product_specs(titulo)
+    except Exception:  # noqa: BLE001
+        specs = ""
+    texto = ia.gerar_descricao(titulo, marca, specs=specs)
     if not texto:
         return JSONResponse(
             {"ok": False, "erro": "Não foi possível gerar a descrição. O Ollama está em execução?"}
