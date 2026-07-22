@@ -5,6 +5,10 @@ Registro das mudanças implementadas (gerado automaticamente a cada merge na `ma
 <!-- novas-entradas -->
 ## 2026-07-22
 
+- feat: ranking de produtos por desempenho (9f769fa)
+
+## 2026-07-22
+
 - chore: adiciona licenca PolyForm Noncommercial 1.0.0 (43f3fe6)
 
 ## 2026-07-22
