@@ -5,6 +5,11 @@ Registro das mudanças implementadas (gerado automaticamente a cada merge na `ma
 <!-- novas-entradas -->
 ## 2026-07-22
 
+- docs: adiciona backlog de features com IA local (Ollama) e central de ajuda no README (f564643)
+- feat: pagina de Ajuda com guia de configuracao e ajuste do Ollama (569a03a)
+
+## 2026-07-22
+
 - docs: documenta sugestao de resposta com IA local (Ollama) no README (11f378e)
 - feat: sugestao de resposta com IA local (Ollama) + toggle em Configuracao (0b8090f)
 
