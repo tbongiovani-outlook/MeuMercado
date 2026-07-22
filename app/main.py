@@ -1403,6 +1403,86 @@ def enviar_mensagem(
 # ---------------------------------------------------------------------------
 # Pós-venda (perguntas + reclamações)
 # ---------------------------------------------------------------------------
+# Palavras que sinalizam pergunta urgente (problema/pós-venda) ou intenção de compra.
+_PERGUNTA_URGENTE = (
+    "urgente",
+    "cadê",
+    "cade",
+    "nao chegou",
+    "não chegou",
+    "atras",
+    "defeito",
+    "quebrad",
+    "reembolso",
+    "cancel",
+    "reclam",
+    "nao funciona",
+    "não funciona",
+    "problema",
+    "danific",
+    "errad",
+    "nao recebi",
+    "não recebi",
+    "prazo",
+    "estorn",
+)
+_PERGUNTA_COMPRA = (
+    "comprar",
+    "disponiv",
+    "disponív",
+    "estoque",
+    "quando",
+    "envia",
+    "entrega",
+    "frete",
+    "pagar",
+    "reserv",
+    "última",
+    "ultima",
+    "ainda tem",
+    "tem esse",
+    "parcel",
+)
+
+
+def _idade_horas(date_created: str) -> float:
+    """Horas desde a criação da pergunta (0 se a data for inválida)."""
+    try:
+        dt = datetime.fromisoformat((date_created or "").replace("Z", "+00:00"))
+        return max(0.0, (datetime.now(UTC) - dt).total_seconds() / 3600)
+    except Exception:  # noqa: BLE001
+        return 0.0
+
+
+def _classificar_urgencia(pergunta: dict) -> dict:
+    """Classifica a urgência de uma pergunta por palavras-chave e tempo de espera."""
+    texto = (pergunta.get("text") or "").lower()
+    horas = _idade_horas(pergunta.get("date_created") or "")
+    score = 0
+    if any(k in texto for k in _PERGUNTA_URGENTE):
+        score += 3
+    if any(k in texto for k in _PERGUNTA_COMPRA):
+        score += 1
+    if horas >= 24:
+        score += 2
+    elif horas >= 6:
+        score += 1
+    if score >= 3:
+        nivel, ordem = "alta", 0
+    elif score >= 1:
+        nivel, ordem = "média", 1
+    else:
+        nivel, ordem = "baixa", 2
+    return {"nivel": nivel, "ordem": ordem, "horas": round(horas)}
+
+
+def _priorizar_perguntas(perguntas: list[dict]) -> list[dict]:
+    """Anota cada pergunta com a urgência e ordena as mais urgentes primeiro."""
+    for p in perguntas:
+        p["urgencia"] = _classificar_urgencia(p)
+    return sorted(perguntas, key=lambda p: (p["urgencia"]["ordem"], -p["urgencia"]["horas"]))
+
+
 @app.get("/pos-venda")
 def pos_venda(request: Request):
     redirect, _ = _require_ready(request)
@@ -1418,7 +1498,7 @@ def pos_venda(request: Request):
             perguntas = q.get("questions", [])
             for pergunta in perguntas:
                 pergunta["sugestao"] = _sugerir_resposta(pergunta.get("text", ""), respostas)
-            ctx["questions"] = perguntas
+            ctx["questions"] = _priorizar_perguntas(perguntas)
         except Exception as exc:  # noqa: BLE001
             ctx["avisos"].append(f"Perguntas indisponíveis: {exc}")
         try:
@@ -1773,7 +1853,7 @@ def _caixa_entrada_dados(uid: int, respostas: list[dict]) -> dict:
         perguntas = f_perguntas.result().get("questions", [])
         for p in perguntas:
             p["sugestao"] = _sugerir_resposta(p.get("text", ""), respostas)
-        dados["perguntas"] = perguntas
+        dados["perguntas"] = _priorizar_perguntas(perguntas)
     except Exception:  # noqa: BLE001
         pass
 
