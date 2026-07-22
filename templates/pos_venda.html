@@ -89,6 +89,15 @@
                 <strong>{{ c.type or 'Reclamação' }}</strong>
                 <span class="badge">{{ c.status }}</span><br>
                 <small class="muted">id {{ c.id }} · {{ (c.date_created or '')[:10] }}</small>
+                {% if ia_on %}
+                <div class="reply">
+                    <button type="button" class="btn btn--ghost btn--sm btn-ia-reclamacao"
+                            data-texto="Reclamação: {{ c.type or 'Reclamação' }} (situação: {{ c.status }})"
+                            title="Sugerir resposta com IA local">✨ Sugerir resposta</button>
+                </div>
+                <textarea class="ia-reclamacao-saida" rows="4" readonly hidden
+                          aria-label="Sugestão de resposta à reclamação"></textarea>
+                {% endif %}
             </li>
             {% endfor %}
         </ul>

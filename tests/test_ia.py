@@ -201,3 +201,107 @@ def test_ia_status_ligada_e_disponivel(auth_client, monkeypatch):
     assert body["disponivel"] is True
     assert body["endpoint"] == ia.DEFAULT_ENDPOINT
     assert body["modelo"] == ia.DEFAULT_MODELO
+
+
+# --- gerar_descricao / sugerir_reclamacao / resumo_do_dia ----------------------
+
+
+def _resp_ok(texto):
+    return lambda *a, **k: httpx.Response(
+        200, json={"response": texto}, request=httpx.Request("POST", "http://x")
+    )
+
+
+def test_gerar_descricao_sucesso(temp_db, monkeypatch):
+    database.set_config("ia_habilitada", "1")
+    monkeypatch.setattr(ia.httpx, "post", _resp_ok("  Descrição top  "))
+    assert ia.gerar_descricao("Camiseta", marca="Nike") == "Descrição top"
+
+
+def test_sugerir_reclamacao_sucesso(temp_db, monkeypatch):
+    database.set_config("ia_habilitada", "1")
+    monkeypatch.setattr(ia.httpx, "post", _resp_ok("Lamento o ocorrido."))
+    assert ia.sugerir_reclamacao("produto veio quebrado") == "Lamento o ocorrido."
+
+
+def test_resumo_do_dia_sucesso(temp_db, monkeypatch):
+    database.set_config("ia_habilitada", "1")
+    monkeypatch.setattr(ia.httpx, "post", _resp_ok("Dia tranquilo."))
+    assert ia.resumo_do_dia({"vendas_30d": 3}) == "Dia tranquilo."
+
+
+def test_funcoes_ia_vazias_sem_entrada_ou_desligadas(temp_db):
+    database.set_config("ia_habilitada", "1")
+    assert ia.gerar_descricao("") == ""
+    assert ia.sugerir_reclamacao("") == ""
+    assert ia.resumo_do_dia({}) == ""
+    database.set_config("ia_habilitada", "0")
+    assert ia.gerar_descricao("Camiseta") == ""
+    assert ia.sugerir_reclamacao("quebrou") == ""
+    assert ia.resumo_do_dia({"vendas_30d": 3}) == ""
+
+
+# --- Endpoints /ia/descricao, /ia/reclamacao, /ia/resumo -----------------------
+
+
+def test_descricao_401_sem_login(client):
+    r = client.post("/ia/descricao", data={"titulo": "x"}, follow_redirects=False)
+    assert r.status_code == 401
+
+
+def test_descricao_400_ia_desligada(auth_client):
+    r = auth_client.post("/ia/descricao", data={"titulo": "x"})
+    assert r.status_code == 400
+
+
+def test_descricao_sucesso(auth_client, monkeypatch):
+    database.set_config("ia_habilitada", "1")
+    monkeypatch.setattr(ia, "gerar_descricao", lambda *a, **k: "Uma descrição")
+    r = auth_client.post("/ia/descricao", data={"titulo": "Camiseta", "marca": "Nike"})
+    assert r.status_code == 200
+    assert r.json() == {"ok": True, "texto": "Uma descrição"}
+
+
+def test_descricao_sem_resultado(auth_client, monkeypatch):
+    database.set_config("ia_habilitada", "1")
+    monkeypatch.setattr(ia, "gerar_descricao", lambda *a, **k: "")
+    r = auth_client.post("/ia/descricao", data={"titulo": "x"})
+    assert r.status_code == 200
+    assert r.json()["ok"] is False
+
+
+def test_reclamacao_sucesso(auth_client, monkeypatch):
+    database.set_config("ia_habilitada", "1")
+    monkeypatch.setattr(ia, "sugerir_reclamacao", lambda *a, **k: "Resposta cordial")
+    r = auth_client.post("/ia/reclamacao", data={"texto": "veio quebrado"})
+    assert r.status_code == 200
+    assert r.json() == {"ok": True, "sugestao": "Resposta cordial"}
+
+
+def test_reclamacao_400_ia_desligada(auth_client):
+    r = auth_client.post("/ia/reclamacao", data={"texto": "x"})
+    assert r.status_code == 400
+
+
+def test_resumo_401_sem_login(client):
+    r = client.post("/ia/resumo", follow_redirects=False)
+    assert r.status_code == 401
+
+
+def test_resumo_sem_cache_do_painel(auth_client, monkeypatch):
+    database.set_config("ia_habilitada", "1")
+    monkeypatch.setattr(ia, "resumo_do_dia", lambda *a, **k: "Resumo!")
+    r = auth_client.post("/ia/resumo")
+    assert r.status_code == 200
+    assert r.json()["ok"] is False
+
+
+def test_resumo_com_cache_do_painel(auth_client, monkeypatch):
+    database.set_config("ia_habilitada", "1")
+    database.cache_set("dashboard:13177531", '{"kpis": {"vendas_30d": 3}}')
+    monkeypatch.setattr(ia, "resumo_do_dia", lambda *a, **k: "Tudo certo hoje.")
+    r = auth_client.post("/ia/resumo")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["ok"] is True
+    assert body["resumo"] == "Tudo certo hoje."
