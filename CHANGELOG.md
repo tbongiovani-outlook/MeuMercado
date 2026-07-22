@@ -5,6 +5,10 @@ Registro das mudanças implementadas (gerado automaticamente a cada merge na `ma
 <!-- novas-entradas -->
 ## 2026-07-22
 
+- feat: descricao IA com especificacoes tecnicas e hashtags; maxlength 10000 (4631b08)
+
+## 2026-07-22
+
 - fix: titulo IA nao termina com conector solto e prompt pede titulo mais curto (2fc9506)
 
 ## 2026-07-22
