@@ -150,13 +150,13 @@ respostas rápidas. Nenhuma dependência nova em Python: o app fala com o Ollama
 ### Como ativar
 
 1. Instale o **Ollama** e baixe um modelo pequeno (uma vez só):
-   - **Windows:** `winget install --id Ollama.Ollama -e` e depois `ollama pull llama3.2:3b`
-   - **macOS:** `brew install ollama` e depois `ollama pull llama3.2:3b`
+   - **Windows:** `winget install --id Ollama.Ollama -e` e depois `ollama pull qwen2.5:3b`
+   - **macOS:** `brew install ollama` e depois `ollama pull qwen2.5:3b`
 2. No app, vá em **Configuração → IA local (opcional)** e marque **Ativar sugestões de resposta com IA local**.
 3. Nas telas de **Pós-venda**, **Caixa de entrada** e **Mensagens**, clique no botão **✨ IA**
    ao lado do campo de resposta para gerar um rascunho (sempre revise antes de enviar).
 
-> Endereço e modelo são configuráveis (padrão: `http://localhost:11434` e `llama3.2:3b`).
+> Endereço e modelo são configuráveis (padrão: `http://localhost:11434` e `qwen2.5:3b`).
 > Modelos menores respondem mais rápido; um modelo 3B roda bem em ~4 GB de RAM, sem GPU.
 
 ### Instalar junto no setup (opcional)

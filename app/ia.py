@@ -17,7 +17,7 @@ from . import database
 logger = logging.getLogger("meu_mercado")
 
 DEFAULT_ENDPOINT = "http://localhost:11434"
-DEFAULT_MODELO = "llama3.2:3b"
+DEFAULT_MODELO = "qwen2.5:3b"
 
 _SYSTEM = (
     "Você é um vendedor do Mercado Livre respondendo a um cliente em português do "
@@ -86,7 +86,7 @@ def endpoint() -> str:
 
 
 def modelo() -> str:
-    """Nome do modelo a usar (ex.: ``llama3.2:3b``)."""
+    """Nome do modelo a usar (ex.: ``qwen2.5:3b``)."""
     return database.get_config("ia_modelo") or DEFAULT_MODELO
 
 
