@@ -48,7 +48,7 @@
         <label class="field">
             <span>Descrição</span>
             <textarea name="description" rows="5" maxlength="10000" placeholder="Descreva o produto…">{{ descricao or '' }}</textarea>
-            {% if ia_on %}<button type="button" class="btn btn--ghost btn--sm btn-ia-descricao" data-titulo="{{ item.title }}" title="Gerar descrição com IA local">✨ Gerar descrição</button>
+            {% if ia_on %}<button type="button" class="btn btn--ghost btn--sm btn-ia-descricao" data-titulo="{{ item.title }}" data-catalog="{{ item.catalog_product_id or '' }}" title="Gerar descrição com IA local">✨ Gerar descrição</button>
             <small class="hint">Rascunho gerado pela IA local — revise antes de salvar.</small>{% endif %}
         </label>
         <label class="field">

@@ -1551,15 +1551,25 @@ def _ia_guard(request: Request):
 
 
 @app.post("/ia/descricao")
-def ia_descricao(request: Request, titulo: str = Form(...), marca: str = Form("")):
+def ia_descricao(
+    request: Request,
+    titulo: str = Form(...),
+    marca: str = Form(""),
+    catalog_product_id: str = Form(""),
+):
     """Gera a descrição de um anúncio a partir do título (e marca). Responde JSON."""
     erro = _ia_guard(request)
     if erro:
         return erro
-    # Grounding: busca especificações reais no catálogo do ML (best-effort).
+    # Grounding: especificações reais do catálogo do ML (best-effort).
+    # Se o item já traz o catalog_product_id (tela de editar), usa o match direto;
+    # caso contrário, busca pelo título.
     specs = ""
     try:
-        specs = meli.get_product_specs(titulo)
+        if catalog_product_id.strip():
+            specs = meli.get_product_specs_by_id(catalog_product_id)
+        if not specs:
+            specs = meli.get_product_specs(titulo)
     except Exception:  # noqa: BLE001
         specs = ""
     texto = ia.gerar_descricao(titulo, marca, specs=specs)

@@ -414,6 +414,36 @@ def _spec_tokens(texto: str) -> set[str]:
     return {p for p in limpo.split() if len(p) >= 3}
 
 
+def _extrair_specs(produto: dict, limite: int) -> str:
+    """Monta a lista ``- Nome: valor`` a partir dos atributos de um produto de catálogo."""
+    linhas = []
+    for attr in produto.get("attributes", []):
+        nome = (attr.get("name") or "").strip()
+        valor = (attr.get("value_name") or "").strip()
+        if not nome or not valor or (attr.get("id") or "") in _SPEC_IGNORAR:
+            continue
+        linhas.append(f"- {nome}: {valor}")
+        if len(linhas) >= limite:
+            break
+    return "\n".join(linhas)
+
+
+def get_product_specs_by_id(catalog_product_id: str, limite: int = 12) -> str:
+    """Specs REAIS de um produto de catálogo pelo ``catalog_product_id``. '' se erro.
+
+    Match direto (mais preciso que a busca por título) — usado quando o próprio item
+    já traz o ``catalog_product_id`` (ex.: tela de editar anúncio).
+    """
+    catalog_product_id = (catalog_product_id or "").strip()
+    if not catalog_product_id:
+        return ""
+    try:
+        return _extrair_specs(get_catalog_product(catalog_product_id), limite)
+    except Exception as exc:  # noqa: BLE001
+        _logger.warning("Falha ao buscar specs do produto %s: %s", catalog_product_id, exc)
+        return ""
+
+
 def get_product_specs(titulo: str, limite: int = 12) -> str:
     """Specs REAIS do catálogo do ML a partir do título. '' se não achar/erro.
 
@@ -440,17 +470,7 @@ def get_product_specs(titulo: str, limite: int = 12) -> str:
         # Exige que a maioria das palavras do título apareça no produto do catálogo.
         if not melhor or melhor_score < 0.5:
             return ""
-        produto = get_catalog_product(melhor.get("id", ""))
-        linhas = []
-        for attr in produto.get("attributes", []):
-            nome = (attr.get("name") or "").strip()
-            valor = (attr.get("value_name") or "").strip()
-            if not nome or not valor or (attr.get("id") or "") in _SPEC_IGNORAR:
-                continue
-            linhas.append(f"- {nome}: {valor}")
-            if len(linhas) >= limite:
-                break
-        return "\n".join(linhas)
+        return _extrair_specs(get_catalog_product(melhor.get("id", "")), limite)
     except Exception as exc:  # noqa: BLE001
         _logger.warning("Falha ao buscar specs do catálogo: %s", exc)
         return ""

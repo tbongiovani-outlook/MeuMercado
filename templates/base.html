@@ -294,6 +294,8 @@
                     var corpoD = { titulo: titulo };
                     var campoMarca = form && form.querySelector('input[name="marca"]');
                     if (campoMarca && campoMarca.value) corpoD.marca = campoMarca.value;
+                    var catalog = bd.getAttribute("data-catalog");
+                    if (catalog) corpoD.catalog_product_id = catalog;
                     chamar("/ia/descricao", new URLSearchParams(corpoD).toString(), bd,
                         function (data) { if (area) { area.value = data.texto; area.focus(); } });
                     return;
