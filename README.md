@@ -440,4 +440,20 @@ mantém o comportamento atual (heurística) ou simplesmente não exibe o botão.
 
 ## 📄 Licença
 
-A definir.
+Este projeto é licenciado sob a **PolyForm Noncommercial License 1.0.0** — veja o
+arquivo [LICENSE](LICENSE).
+
+Em resumo (este texto não substitui a licença):
+
+- ✅ **Permitido:** usar, copiar, modificar e distribuir o software para qualquer
+  finalidade **não comercial** — uso pessoal, estudo, pesquisa, projetos de hobby,
+  organizações sem fins lucrativos, instituições de ensino/pesquisa e órgãos públicos.
+- ❌ **Não permitido:** qualquer **uso comercial** — vender o software, cobrar por
+  ele, oferecê-lo como serviço pago ou empregá-lo para obter lucro — sem autorização
+  expressa do autor.
+- Ao redistribuir, mantenha o aviso `Required Notice` e uma cópia da licença.
+
+Para uso comercial, entre em contato com o autor para negociar uma licença específica.
+
+> Required Notice: Copyright (c) 2026 tbongiovani — Meu Mercado
+
