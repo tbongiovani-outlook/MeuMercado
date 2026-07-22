@@ -385,7 +385,8 @@ curl -X POST \
 - [x] Modo escuro (tema claro/escuro)
 - [x] Tratamento de rate limit (429) com retentativa/backoff
 - [x] Aplicativo instalável (PWA) e notificações desktop
-- [ ] Sugestão de resposta com IA e multi-conta do Mercado Livre
+- [x] Sugestão de resposta com **IA local** (Ollama — opcional, gratuito e 100% offline)
+- [ ] Multi-conta do Mercado Livre
 
 ---
 

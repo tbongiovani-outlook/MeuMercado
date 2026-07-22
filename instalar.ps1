@@ -72,6 +72,41 @@ function Instalar-Python {
     }
 }
 
+function Instalar-Ollama {
+    # IA local opcional (Ollama). So roda se o usuario pedir: $env:MM_COM_IA = "1".
+    # Silencioso e sem admin. O app funciona sem isso (cai na sugestao por palavras-chave).
+    $modelo = if ($env:MM_IA_MODELO) { $env:MM_IA_MODELO } else { "llama3.2:3b" }
+    Escrever "Instalando a IA local (Ollama) - opcional, pode baixar ~2 GB..." "Yellow"
+    if (-not (Get-Command ollama -ErrorAction SilentlyContinue)) {
+        $wg = Get-Command winget -ErrorAction SilentlyContinue
+        if ($wg) {
+            try {
+                winget install --id Ollama.Ollama -e --silent `
+                    --accept-package-agreements --accept-source-agreements | Out-Null
+            } catch { Escrever "winget falhou, tentando o instalador oficial do Ollama..." "Yellow" }
+        }
+        Atualizar-Path
+        if (-not (Get-Command ollama -ErrorAction SilentlyContinue)) {
+            $ollamaExe = Join-Path $env:LOCALAPPDATA "Programs\Ollama\ollama.exe"
+            if (-not (Test-Path $ollamaExe)) {
+                $inst = Join-Path $env:TEMP "OllamaSetup.exe"
+                try {
+                    Invoke-WebRequest -UseBasicParsing "https://ollama.com/download/OllamaSetup.exe" -OutFile $inst
+                    Start-Process -Wait -FilePath $inst -ArgumentList "/VERYSILENT", "/NORESTART"
+                    Atualizar-Path
+                } catch { Escrever "Nao foi possivel instalar o Ollama automaticamente." "Red"; return }
+            }
+        }
+    }
+    $ollama = (Get-Command ollama -ErrorAction SilentlyContinue).Source
+    if (-not $ollama) { $ollama = Join-Path $env:LOCALAPPDATA "Programs\Ollama\ollama.exe" }
+    if (Test-Path $ollama) {
+        Escrever "Baixando o modelo $modelo (uma vez)..."
+        try { & $ollama pull $modelo } catch { Escrever "Falha ao baixar o modelo $modelo." "Yellow" }
+        Escrever "IA local pronta. Ative em Configuracao > IA local." "Green"
+    }
+}
+
 # ---------------------------------------------------------------------
 # 1) Garante o Python
 # ---------------------------------------------------------------------
@@ -113,6 +148,13 @@ if (-not (Test-Path $venvPy)) {
 Escrever "Instalando dependencias..."
 & $venvPy -m pip install --upgrade pip --quiet
 & $venvPy -m pip install --quiet -r (Join-Path $Dest "requirements.txt")
+
+# ---------------------------------------------------------------------
+# 3.5) IA local opcional (Ollama) - so quando MM_COM_IA=1
+# ---------------------------------------------------------------------
+if ($env:MM_COM_IA -eq "1") {
+    try { Instalar-Ollama } catch { Escrever "IA local ignorada (opcional): $_" "Yellow" }
+}
 
 # ---------------------------------------------------------------------
 # 4) Arquivo .env com chave de sessao aleatoria
@@ -168,4 +210,8 @@ Escrever " Para abrir de novo, use o atalho 'Meu Mercado'." "Gray"
 Escrever "==================================================" "Cyan"
 if (-not $ok) {
     Escrever "Se o site nao abrir, aguarde alguns segundos e acesse $Url" "Yellow"
+}
+if ($env:MM_COM_IA -ne "1") {
+    Escrever " Dica: para sugestoes de resposta com IA local (gratis), instale o Ollama" "Gray"
+    Escrever "       (https://ollama.com) e ative em Configuracao > IA local." "Gray"
 }
