@@ -44,6 +44,7 @@
         <li>
             <strong>{{ q.text }}</strong><br>
             <small class="muted">item {{ q.item_id }} · {{ (q.date_created or '')[:10] }}</small>
+            {% if q.urgencia %}<span class="tag tag--{{ q.urgencia.nivel }}" title="Prioridade estimada pela espera e pelo conteúdo">{{ q.urgencia.nivel|capitalize }}</span>{% endif %}
             {% if q.item_id %}<a class="btn btn--ghost btn--sm" href="/anuncios/{{ q.item_id }}/editar">Ver anúncio</a>{% endif %}
             <form class="reply" method="post" action="/caixa-entrada/responder">
                 <input type="hidden" name="question_id" value="{{ q.id }}">
