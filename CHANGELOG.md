@@ -5,6 +5,10 @@ Registro das mudanças implementadas (gerado automaticamente a cada merge na `ma
 <!-- novas-entradas -->
 ## 2026-07-22
 
+- fix: campo Descricao na tela de Publicar e titulo IA sem cortar palavra (5677cd0)
+
+## 2026-07-22
+
 - feat: formata resposta do assistente e resumo (markdown: negrito, listas, paragrafos) (7bf2118)
 
 ## 2026-07-22
